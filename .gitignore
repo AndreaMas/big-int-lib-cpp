@@ -30,3 +30,5 @@
 *.exe
 *.out
 *.app
+/.vs/BigIntAssignment
+/x64/Debug
