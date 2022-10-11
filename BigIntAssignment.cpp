@@ -12,29 +12,36 @@
 * ********************************************** 
 */
 #pragma region asserts
-void CheckSum() {
-    std::string sA =  "12233344445555566666678899900000000000000000000000000000000000000000000000000000000000";
-    std::string sB =  "91111111111111111111111100011110000000000000000000000000000000000000000000000000000000";
-    std::string sR = "103344455556666677777789999911110000000000000000000000000000000000000000000000000000000";
-    BigInt a;
-    BigInt b;
-    a.StringToBigint(sA);
-    b.StringToBigint(sB);
-    BigInt c;
-    c = a + b;
-    std::string sC = c.BigintToString();
-    assert(sC == sR);
-
-}
 void CheckBigIntToStringAndViceversa() {
+    // string -> bigint
     std::string sA = "-1223334444555556666667889990000";
     BigInt a;
     a.StringToBigint(sA);
+    // bigint -> string
     std::string sB = a.BigintToString();
-    int i = 0;
-    for (int i = 0; i < 1000; i++) std::cout << "";
     a.StringToBigint(sB);
     assert(sA == sB);
+}
+void CheckSum() {
+    BigInt        a( "122333444455555666666788999000000000000");
+    BigInt        b( "911111111111111111111111000111100000000");
+    BigInt expected("1033444555566666777777899999111100000000");
+	BigInt res;
+	res = a + b;
+	assert(res == expected);
+    a += b;
+    assert(a == expected);
+}
+void CheckSub() {
+	BigInt        a( "122333444455555666666788999000000000000");
+	BigInt        b( "111111111111111111111111111000000000000");
+	BigInt expected(  "11222333344444555555677888000000000000");
+    BigInt res;
+	res = a - b;
+	assert(res == expected);
+	//a -= b;
+	//assert(a == expected);
+
 }
 #pragma endregion
 
@@ -44,46 +51,38 @@ int main()
     
     {
         std::cout << "Runtime checks!\n";
-        CheckSum();
         CheckBigIntToStringAndViceversa();
+        CheckSum();
+        CheckSub();
     }
     
 
-    BigInt a(-9000000000000000);
-    BigInt b(-9000000000000000);
-    b = a + b;
+    BigInt a("-111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
+    BigInt b("-111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
 
     std::cout << "A: " << std::endl << a << std::endl;
     std::cout << "B: " << std::endl << b << std::endl;
 
-	for (int i = 0; i < 1000; i++) {
-		std::cout << "A: " << std::endl << a << std::endl;
-		a = a + b;
-	}
+    a += b;
+    b += a;
 
 	std::cout << "A: " << std::endl << a << std::endl;
-
-    std::string s = "1223334444555556666667889990000";
-    b.StringToBigint(s);
-
 	std::cout << "B: " << std::endl << b << std::endl;
 
-    s = b.BigintToString();
-    b.StringToBigint(s);
-
-    std::cout << "B: " << std::endl << b << std::endl;
-
-
+	for (int i = 0; i < 10; i++) {
+		std::cout << "A: " << std::endl << a << std::endl;
+		a = a + b;
+        b = b + a;
+	}
 
 
 
 
     // Yet to do:
-    std::cout << std::endl;
-	//BigInt x(1999999999);
-    //BigInt y(1999999999);
-    //BigInt z = x + y;
-    //BigInt w("987654356789"); 
+	BigInt x(1999999999);
+    BigInt y(1999999999);
+    BigInt z = x + y;
+    BigInt w("987654356789"); 
     //y = pow(x, 10);
     //BigInt z = x; // copy constructor
     //z = x; // operator =

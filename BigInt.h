@@ -1,13 +1,3 @@
-/*
-* *******************************************************
-* BIG INTEGER C++ LIBRARY
-* 
-* AUTHOR: ANDREA MASCIULLI
-* 
-* *******************************************************
-*/
-
-
 #pragma once
 #include <iostream>
 #include <deque>
@@ -26,25 +16,46 @@ private:
 	std::deque<int> value;
 	bool neg; // is negative
 public:
+	// constructors & copy
 	BigInt();
 	BigInt(long long);
 	BigInt(const BigInt&);
+	BigInt(const char* cArray);
 	void operator = (const BigInt&);
-	BigInt operator - () const;
-	BigInt operator + () const;
+	// algebra ops
 	BigInt operator + (const BigInt&) const;
 	BigInt operator - (const BigInt&) const;
 	BigInt operator / (const BigInt&) const;
 	BigInt operator * (const BigInt&) const;
+	BigInt operator % (const BigInt&) const;
+	void operator += (const BigInt&);
+	void operator -= (const BigInt&);
+	void operator *= (const BigInt&);
+	void operator /= (const BigInt&);
+	void operator %= (const BigInt&);
+	BigInt operator - () const;
+	BigInt operator + () const;
+	BigInt pow(const BigInt&, int);
+	// comparisons
+	bool operator == (const BigInt&) const;
+	bool operator != (const BigInt&) const;
+	bool operator <= (const BigInt&) const;
+	bool operator >= (const BigInt&) const;
+	bool operator < (const BigInt&) const;
+	bool operator > (const BigInt&) const;
+	// print & string ops
 	friend std::ostream& operator << (std::ostream&, const BigInt&);
 	std::string BigintToString() const;
-	
 	void StringToBigint(const std::string&);
 };
 
-std::ostream& operator << (std::ostream& os, const BigInt& bigint) {
-	return os << bigint.BigintToString();
-}
+
+/*
+* *******************************************************************
+* CONSTRUCTORS & COPY
+* *******************************************************************
+*/
+#pragma region constructors
 
 BigInt::BigInt() : neg(false) {
 	value.clear();
@@ -70,29 +81,26 @@ BigInt::BigInt(const BigInt& num) {
 	*this = num;
 }
 
+BigInt::BigInt(const char *cArray)
+{
+	std::string s(cArray); // TODO: avoid using string
+	this->StringToBigint(s);
+}
+
 void BigInt::operator = (const BigInt& num) {
 	this->neg = num.neg;
 	this->value.clear();
-	this->value = num.value;
+	this->value = num.value; // deep copy
 }
 
-//BigInt BigInt::operator = (const BigInt& num) {
-//	BigInt r;
-//	r.neg = num.neg;
-//	r.value = num.value;
-//	return r;
-//}
+#pragma endregion
 
-BigInt BigInt::operator - () const {
-	BigInt res = *this;
-	res.neg = !neg;
-	return res;
-}
-
-BigInt BigInt::operator + () const {
-	BigInt res = *this;
-	return res;
-}
+/*
+* *******************************************************************
+* ALGEBRA OPERATIONS
+* *******************************************************************
+*/
+#pragma region algebOps
 
 BigInt BigInt::operator + (const BigInt& num) const{
 	// if signs differ call sub instead
@@ -105,7 +113,7 @@ BigInt BigInt::operator + (const BigInt& num) const{
 	int a = 0;
 	int b = 0;
 	int r = 0;
-	int numCellsA = value.size(); // TODO: best to make this long/bigint as well?
+	int numCellsA = value.size(); // TODO: make this long/bigint?
 	int numCellsB = num.value.size();
 	int maxCells = std::max(numCellsA, numCellsB);
 	// sum betw all integer cells in vectors
@@ -139,18 +147,20 @@ BigInt BigInt::operator - (const BigInt& num) const {
 	int a = 0;
 	int b = 0;
 	int r = 0;
-	int numCellsA = value.size();
+	int numCellsA = value.size(); // TODO: make this long/bigint?
 	int numCellsB = num.value.size();
 	int maxCells = std::max(numCellsA, numCellsB);
-	// sub betw all integer cells in vectors
+	// sum betw all integer cells in vectors
 	for (int i = 0; i < maxCells || carry != 0; i++) {
 		a = (numCellsA > i) ? value.at(i) : 0;
 		b = (numCellsB > i) ? num.value.at(i) : 0;
 		r = a + b + carry;
 		// if cell overflows add 1 to next cell
-		if (r < 0 || r > CELL_MAX) {
+		// if (r < 0)
+		if (r > CELL_MAX) {
 			carry = 1;
-			r = (r + CELL_MAX) + 1;
+			//r = (r + CELL_MAX) + 1;
+			r = r - CELL_MAX;
 		}
 		else {
 			carry = 0;
@@ -158,6 +168,119 @@ BigInt BigInt::operator - (const BigInt& num) const {
 		result.value.push_back(r);
 	}
 	return result;
+}
+
+void BigInt::operator+=(const BigInt& other)
+{
+	*this = *this + other;
+}
+
+void BigInt::operator-=(const BigInt& other)
+{
+	*this = *this - other;
+}
+
+// change sign
+BigInt BigInt::operator - () const {
+	BigInt res = *this;
+	res.neg = !neg;
+	return res;
+}
+
+BigInt BigInt::operator + () const {
+	BigInt res = *this;
+	return res;
+}
+
+#pragma endregion
+
+/*
+* *******************************************************************
+* COMPARISONS
+* *******************************************************************
+*/
+#pragma region comparisons
+
+bool BigInt::operator != (const BigInt& other) const {
+	if (this->neg != other.neg || this->value != other.value) 
+		return true;
+	return false;
+}
+
+bool BigInt::operator == (const BigInt& other) const {
+	if (*this != other) return false;
+	return true;
+}
+
+bool BigInt::operator < (const BigInt& other) const {
+	// infer by sign (if left negative true)
+	if (this->neg != other.neg) {
+		if (this->neg == true) return true;
+		else return false;
+	}
+	// infer by number of cells (left and right)
+	int sizeL = this->value.size();
+	int sizeR = other.value.size();
+	if (sizeL != sizeR) {
+		if (sizeL < sizeR) return true;
+		if (sizeL > sizeR) return false;
+	}
+	// compare cells
+	for (int i = 0; i < sizeL; i++) {
+		if (this->value.at(i) > other.value.at(i)) return false;
+	}
+	return true;
+}
+
+//bool BigInt::operator > (const BigInt& other) const {
+//	if (!(*this < other) && *this != other) return true;
+//}
+
+bool BigInt::operator > (const BigInt& other) const {
+	// infer by sign (if left negative false)
+	if (this->neg != other.neg) {
+		if (this->neg == true) return false;
+		else return true;
+	}
+	// infer by number of cells (left and right)
+	int sizeL = this->value.size();
+	int sizeR = other.value.size();
+	if (sizeL != sizeR) {
+		if (sizeL < sizeR) return false;
+		if (sizeL > sizeR) return true;
+	}
+	// compare cells
+	for (int i = 0; i < sizeL; i++) {
+		if (this->value.at(i) < other.value.at(i)) return false;
+	}
+	return true;
+}
+
+bool BigInt::operator <= (const BigInt& other) const {
+	if (*this > other) return false;
+	return true;
+}
+
+bool BigInt::operator >= (const BigInt& other) const {
+	if (*this < other) return false;
+	return true;
+}
+
+
+
+
+
+#pragma endregion
+
+/*
+* *******************************************************************
+* PRINT & STRING OPS
+* *******************************************************************
+*/
+#pragma region stringOps
+
+std::ostream& operator << (std::ostream& os, const BigInt& bigint) {
+	return os << bigint.BigintToString();
 }
 
 std::string BigInt::BigintToString() const
@@ -219,68 +342,9 @@ void BigInt::StringToBigint(const std::string& s)
 	for (int i = 0; i < necessaryCells; i++) {
 		std::string cellstring = s.substr(signOffset + digitsFirstCell + i * CELL_NUM_DIGITS, CELL_NUM_DIGITS);
 		int cellValue = std::stoi(cellstring);
-		value.push_front(cellValue); // TODO: Use push_back
+		value.push_front(cellValue); // TODO: efficient for deque? It should be, yet check
 	}
-
-	//short digitNum = 1;
-	//for (char c : s) {
-	//	if (digitNum == CELL_NUM_DIGITS) {
-	//		// allocate new cell
-	//		digitNum = 1;
-	//	}
-	//}
 }
 
+#pragma endregion
 
-
-
-
-//BigInt BigInt::operator + (const BigInt& num) const {
-//	// subtract if signs differ
-//	if (this->neg != num.neg)
-//		return *this - (-num);
-//	// operands
-//	BigInt a(*this);
-//	BigInt b(num);
-//	// padding cells
-//	int maxCells = std::max<int>(value.size(), num.value.size());
-//	while (a.value.size() < maxCells) {
-//		a.value.push_back(0);
-//	}
-//	while (b.value.size() < maxCells) {
-//		b.value.push_back(0);
-//	}
-//	// sum: sum betw cells, add 1 to next cell if overflown
-//	int carry = 0;
-//	for (int i = 0; i < maxCells; i++) {
-//		a.value[i] = a.value[i] + b.value[i] + carry;
-//		if (a.value[i] < 0) { // overflowed
-//			carry = 1;
-//			a.value[i] = (a.value[i] + CELL_MAX) + 1;
-//		}
-//		else {
-//			carry = 0;
-//		}
-//	}
-//	if (carry != 0)
-//		a.value.push_back(1);
-//	return a;
-//}
-
-
-
-
-//BigInt BigInt::operator + (const BigInt& num) {
-//	//if (neg != num.neg) return *this - (-num); // if signs differ
-//	int base = 1000000000;
-//	BigInt res = num;
-//	for (int i = 0, carry = 0; i < (int)std::max(value.size(), num.value.size()) || carry; ++i) {
-//		if (i == (int)res.value.size())
-//			res.value.push_back(0);
-//		res.value[i] += carry + (i < (int)value.size() ? value[i] : 0);
-//		carry = res.value[i] >= base;
-//		if (carry)
-//			res.value[i] -= base;
-//	}
-//	return res;
-//}
