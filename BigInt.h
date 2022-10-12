@@ -72,9 +72,10 @@ BigInt::BigInt(int64_t num) : neg(false) {
 		neg = true;
 		num = -num;
 	}
+	// separate 64bit number into two 32bit
 	uint32_t firstHalf = (uint32_t)(num & UINT32_MAX);
 	uint32_t secondHalf = (uint32_t)(num >> 32);
-	std::cout << "\n -- first half: " << firstHalf << std::endl;
+	std::cout << " -- first half: " << firstHalf << std::endl;
 	std::cout << " -- secon half: " << secondHalf << std::endl;
 	value.push_back(firstHalf);
 	if (secondHalf) value.push_back(secondHalf);
@@ -143,29 +144,26 @@ BigInt BigInt::operator - (const BigInt& num) const {
 	// prepare for sub
 	BigInt result;
 	result.neg = this->neg;
-	int carry = 0;
-	int a = 0;
-	int b = 0;
-	int r = 0;
-	int numCellsA = value.size(); // TODO: make this long/bigint?
-	int numCellsB = num.value.size();
-	int maxCells = std::max(numCellsA, numCellsB);
+	uint32_t carry = 0;
+	uint32_t a = 0;
+	uint32_t b = 0;
+	uint32_t res32 = 0;
+	uint64_t res64 = 0;
+	uint64_t numCellsA = value.size(); // TODO: check size() is 64 bit
+	uint64_t numCellsB = num.value.size();
+	uint64_t maxCells = std::max(numCellsA, numCellsB);
 	// sum betw all integer cells in vectors
-	for (int i = 0; i < maxCells || carry != 0; i++) {
+	for (uint64_t i = 0; i < maxCells || carry != 0; i++) {
 		a = (numCellsA > i) ? value.at(i) : 0;
 		b = (numCellsB > i) ? num.value.at(i) : 0;
-		r = a + b + carry;
-		// if cell overflows add 1 to next cell
-		// if (r < 0)
-		if (r > CELL_MAX) {
-			carry = 1;
-			//r = (r + CELL_MAX) + 1;
-			r = r - CELL_MAX;
-		}
-		else {
-			carry = 0;
-		}
-		result.value.push_back(r);
+		res64 = (uint64_t)a + (uint64_t)b + carry;
+		// cut into 32bit halves, left is carry
+		res32 = (uint32_t)(res64);
+		carry = (uint32_t)(res64 >> 32);
+		//std::cout << res64 << "\n";
+		//std::cout << res32 << "\n";
+		//std::cout << carry << "\n";
+		result.value.push_back(res32);
 	}
 	return result;
 }
@@ -280,7 +278,7 @@ bool BigInt::operator >= (const BigInt& other) const {
 #pragma region stringOps
 
 std::ostream& operator << (std::ostream& os, const BigInt& bigint) {
-	return os << "\n ~~~ BI: ~~~\n" << bigint.BigintToString() << "\n ~~~ end BI ~~~ \n";
+	return os << "\n ~ " << bigint.BigintToString() << " ~ \n";
 }
 
 //std::string BigInt::BigintToString() const
@@ -325,8 +323,9 @@ std::string BigInt::BigintToString() const
 
 		// cell zero-padding
 		if (iter != value.rbegin()) {
-			for (int i = s.size(); i < CELL_NUM_DIGITS; i++) {
-				s = zerostr + s;
+			int numZeros = CELL_NUM_DIGITS - s.size();
+			for (int i = 0; i < numZeros; i++) {
+				s = zerostr + s; // TODO: refactor
 			}
 		}
 
@@ -370,7 +369,7 @@ void BigInt::StringToBigint(const std::string& s)
 	for (int i = 0; i < necessaryCells; i++) {
 		std::string cellstring = s.substr(signOffset + digitsFirstCell + (i * CELL_NUM_DIGITS), CELL_NUM_DIGITS);
 		int cellValue = std::stoi(cellstring);
-		value.push_front(cellValue); // TODO: efficient for deque? It should be, yet check
+		value.push_front(cellValue); // TODO: efficient for deque? Should be, yet check
 	}
 }
 

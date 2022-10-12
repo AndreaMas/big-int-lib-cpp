@@ -12,6 +12,24 @@
 * ********************************************** 
 */
 #pragma region asserts
+void CheckLongLongConstructor() {
+	BigInt a(UINT32_MAX);
+	BigInt b(int64_t(UINT32_MAX) + 1);
+	BigInt b2(int64_t(UINT32_MAX) + 2);
+	BigInt b3(int64_t(UINT32_MAX) + 3);
+	BigInt c(INT64_MAX);
+	BigInt d(-INT64_MAX);
+	//std::cout << "A : \n" << a << "\n";
+	//std::cout << "B : \n" << b << "\n";
+	//std::cout << "B2: \n" << b2 << "\n";
+	//std::cout << "B3: \n" << b3 << "\n";
+	//std::cout << "C : \n" << c << "\n";
+	//std::cout << "D : \n" << d << "\n";
+}
+void CheckStringConstructor() {
+    BigInt a("-11111111111111111111111111111111111");
+    std::cout << "A : \n" << a << "\n";
+}
 void CheckBigIntToStringAndViceversa() {
     // string -> bigint
     std::string sA = "-1223334444555556666667889990000";
@@ -43,6 +61,26 @@ void CheckSub() {
 	//assert(a == expected);
 
 }
+void CheckSum2() {
+	BigInt        a(uint64_t(UINT32_MAX) - 100);
+	BigInt        b(200);
+	BigInt expected(uint64_t(UINT32_MAX) + 100);
+	BigInt res;
+	res = a + b;
+	assert(res == expected);
+	a += b;
+	assert(a == expected);
+}
+void CheckSub2() {
+	BigInt        a(uint64_t(UINT32_MAX) + 100);
+	BigInt        b(200);
+	BigInt expected(uint64_t(UINT32_MAX) - 100);
+	BigInt res;
+	res = a - b;
+	assert(res == expected);
+	a -= b;
+	assert(a == expected);
+}
 #pragma endregion
 
 
@@ -51,27 +89,17 @@ int main()
     
     {
         std::cout << "Runtime checks!\n";
+        //CheckStringConstructor();
         //CheckBigIntToStringAndViceversa();
-        //CheckSum();
-        //CheckSub();
+        //CheckSum2();
+        CheckSub2();
     }
     
 
     //BigInt a("-111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
     //BigInt b("-111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
 
- //   BigInt a(UINT32_MAX); 
- //   std::cout << a << "\n";
- //   BigInt b(int64_t(UINT32_MAX) + 1);
- //   std::cout << "B: \n" << b << "\n";
-	//BigInt b2(int64_t(UINT32_MAX) + 2);
-	//std::cout << "B2: \n" << b2 << "\n";
-	//BigInt b3(int64_t(UINT32_MAX) + 3);
-	//std::cout << "B3: \n" << b3 << "\n";
-    BigInt c(INT64_MAX);
-    std::cout << "C: \n" << c << "\n";
-    BigInt d(-INT64_MAX);
-    std::cout << "D: \n" << d << "\n";
+
 
  //   a += b;
  //   b += a;
@@ -89,10 +117,10 @@ int main()
 
 
     // Yet to do:
-	BigInt x(1999999999);
-    BigInt y(1999999999);
-    BigInt z = x + y;
-    BigInt w("987654356789"); 
+	//BigInt x(1999999999);
+    //BigInt y(1999999999);
+    //BigInt z = x + y;
+    //BigInt w("987654356789"); 
     //y = pow(x, 10);
     //BigInt z = x; // copy constructor
     //z = x; // operator =
