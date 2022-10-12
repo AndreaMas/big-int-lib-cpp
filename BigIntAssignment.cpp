@@ -51,29 +51,39 @@ int main()
     
     {
         std::cout << "Runtime checks!\n";
-        CheckBigIntToStringAndViceversa();
-        CheckSum();
-        CheckSub();
+        //CheckBigIntToStringAndViceversa();
+        //CheckSum();
+        //CheckSub();
     }
     
 
-    BigInt a("-111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
-    BigInt b("-111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
+    //BigInt a("-111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
+    //BigInt b("-111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
 
-    std::cout << "A: " << std::endl << a << std::endl;
-    std::cout << "B: " << std::endl << b << std::endl;
+ //   BigInt a(UINT32_MAX); 
+ //   std::cout << a << "\n";
+ //   BigInt b(int64_t(UINT32_MAX) + 1);
+ //   std::cout << "B: \n" << b << "\n";
+	//BigInt b2(int64_t(UINT32_MAX) + 2);
+	//std::cout << "B2: \n" << b2 << "\n";
+	//BigInt b3(int64_t(UINT32_MAX) + 3);
+	//std::cout << "B3: \n" << b3 << "\n";
+    BigInt c(INT64_MAX);
+    std::cout << "C: \n" << c << "\n";
+    BigInt d(-INT64_MAX);
+    std::cout << "D: \n" << d << "\n";
 
-    a += b;
-    b += a;
+ //   a += b;
+ //   b += a;
 
-	std::cout << "A: " << std::endl << a << std::endl;
-	std::cout << "B: " << std::endl << b << std::endl;
+	//std::cout << "A: " << std::endl << a << std::endl;
+	//std::cout << "B: " << std::endl << b << std::endl;
 
-	for (int i = 0; i < 10; i++) {
-		std::cout << "A: " << std::endl << a << std::endl;
-		a = a + b;
-        b = b + a;
-	}
+	//for (int i = 0; i < 10; i++) {
+	//	std::cout << "A: " << std::endl << a << std::endl;
+	//	a = a + b;
+ //       b = b + a;
+	//}
 
 
 
