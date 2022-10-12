@@ -4,12 +4,7 @@
 #include <limits>
 #include <string>
 
-//const int CELL_MAX = 1000000000;
 const int CELL_NUM_DIGITS = 10;
-//const int CELL_MAX = 2147483647;
-//const int CELL_MAX = INT_MAX;
-//const int CELL_MIN = INT_MIN;
-//const int CELL_MAX_PLUS_ONE = CELL_MAX + 1;
 const uint32_t CELL_MAX = UINT32_MAX;
 
 class BigInt {
@@ -75,8 +70,8 @@ BigInt::BigInt(int64_t num) : neg(false) {
 	// separate 64bit number into two 32bit
 	uint32_t firstHalf = (uint32_t)(num & UINT32_MAX);
 	uint32_t secondHalf = (uint32_t)(num >> 32);
-	std::cout << " -- first half: " << firstHalf << std::endl;
-	std::cout << " -- secon half: " << secondHalf << std::endl;
+	//std::cout << " -- first half: " << firstHalf << std::endl;
+	//std::cout << " -- secon half: " << secondHalf << std::endl;
 	value.push_back(firstHalf);
 	if (secondHalf) value.push_back(secondHalf);
 }
@@ -106,26 +101,26 @@ void BigInt::operator = (const BigInt& num) {
 */
 #pragma region algebOps
 
-BigInt BigInt::operator + (const BigInt& num) const{
+BigInt BigInt::operator + (const BigInt& other) const{
 	// if signs differ call sub instead
-	if (this->neg != num.neg)
-		return *this - (-num);
+	if (this->neg != other.neg)
+		return *this - (-other);
 	// prepare for sum
 	BigInt result;
 	result.neg = this->neg;
 	uint32_t carry = 0;
-	uint32_t a = 0;
-	uint32_t b = 0;
+	uint64_t a = 0;
+	uint64_t b = 0;
 	uint32_t res32 = 0;
 	uint64_t res64 = 0;
-	uint64_t numCellsA = value.size(); // TODO: check size() is 64 bit
-	uint64_t numCellsB = num.value.size();
+	uint64_t numCellsA = value.size();
+	uint64_t numCellsB = other.value.size();
 	uint64_t maxCells = std::max(numCellsA, numCellsB);
 	// sum betw all integer cells in vectors
 	for (uint64_t i = 0; i < maxCells || carry != 0; i++) {
 		a = (numCellsA > i) ? value.at(i) : 0;
-		b = (numCellsB > i) ? num.value.at(i) : 0;
-		res64 = (uint64_t)a + (uint64_t)b + carry;
+		b = (numCellsB > i) ? other.value.at(i) : 0;
+		res64 = a + b + carry;
 		// cut into 32bit halves, left is carry
 		res32 = (uint32_t)(res64);
 		carry = (uint32_t)(res64 >> 32);
@@ -137,33 +132,42 @@ BigInt BigInt::operator + (const BigInt& num) const{
 	return result;
 }
 
-BigInt BigInt::operator - (const BigInt& num) const {
+BigInt BigInt::operator - (const BigInt& other) const {
 	// if signs differ call sum instead
-	if (this->neg != num.neg)
-		return *this + (-num);
+	if (this->neg != other.neg)
+		return *this + (-other);
+	// if left < right re-call, swapped, with !signs
+	if (*this < other)
+		return -other - (-(*this));
 	// prepare for sub
 	BigInt result;
 	result.neg = this->neg;
-	uint32_t carry = 0;
-	uint32_t a = 0;
-	uint32_t b = 0;
-	uint32_t res32 = 0;
+	uint64_t carry = 0;
+	uint64_t a = 0;
+	uint64_t b = 0;
+	uint64_t b2 = 0;
 	uint64_t res64 = 0;
-	uint64_t numCellsA = value.size(); // TODO: check size() is 64 bit
-	uint64_t numCellsB = num.value.size();
-	uint64_t maxCells = std::max(numCellsA, numCellsB);
+	uint32_t res32 = 0;
+	uint64_t numCellsA = value.size();
+	uint64_t numCellsB = other.value.size();
 	// sum betw all integer cells in vectors
-	for (uint64_t i = 0; i < maxCells || carry != 0; i++) {
-		a = (numCellsA > i) ? value.at(i) : 0;
-		b = (numCellsB > i) ? num.value.at(i) : 0;
-		res64 = (uint64_t)a + (uint64_t)b + carry;
-		// cut into 32bit halves, left is carry
-		res32 = (uint32_t)(res64);
-		carry = (uint32_t)(res64 >> 32);
-		//std::cout << res64 << "\n";
-		//std::cout << res32 << "\n";
-		//std::cout << carry << "\n";
-		result.value.push_back(res32);
+	for (uint64_t i = 0; i < numCellsA; i++) {
+		a = value.at(i);
+		b = (numCellsB > i) ? other.value.at(i) : 0;
+
+		b2 = b + carry;
+		if (b2 <= a) {
+			res32 = a - b2;
+			carry = 0;
+		}
+		else {
+			res32 = a + UINT32_MAX - b2;
+			carry = 1;
+		}
+		//res32 = (uint32_t)res64;
+		// if first element 0 don't push
+		if (i != numCellsA-1 || res64 != 0)
+			result.value.push_back(res32);
 	}
 	return result;
 }
@@ -280,33 +284,6 @@ bool BigInt::operator >= (const BigInt& other) const {
 std::ostream& operator << (std::ostream& os, const BigInt& bigint) {
 	return os << "\n ~ " << bigint.BigintToString() << " ~ \n";
 }
-
-//std::string BigInt::BigintToString() const
-//{
-//	if (value.size() == 0) return "Empty";
-//	std::string result = neg ? "-" : "";
-//
-//	uint64_t index = 0;
-//	for (auto iter = value.rbegin(); iter != value.rend(); iter++) {
-//		uint32_t cell = *iter;
-//		printf("- cell %lu --> %010u\n", index, cell);
-//		//std::cout << index << " cell --> " << cell << std::endl;
-//		std::string s = std::to_string(cell);
-//		std::string zerostr = "0";
-//
-//		// cell zero-padding
-//		if (iter != value.rbegin()) {
-//			for (int i = s.size(); i < CELL_NUM_DIGITS; i++) {
-//				s = zerostr + s; // horrible
-//			}
-//		}
-//
-//		result.append(s);
-//		result.append(".");
-//		index++;
-//	}	
-//	return result;
-//}
 
 std::string BigInt::BigintToString() const
 {
