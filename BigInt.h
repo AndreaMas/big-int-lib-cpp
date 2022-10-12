@@ -161,7 +161,7 @@ BigInt BigInt::operator - (const BigInt& other) const {
 			carry = 0;
 		}
 		else {
-			res32 = a + UINT32_MAX - b2;
+			res32 = a + ((uint64_t)UINT32_MAX + 1) - b2;
 			carry = 1;
 		}
 		//res32 = (uint32_t)res64;
