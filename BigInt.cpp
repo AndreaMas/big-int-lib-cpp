@@ -1,5 +1,4 @@
 #include "BigInt.h"
-
 #include <iostream>
 #include <deque>
 #include <vector>
@@ -128,43 +127,6 @@ BigInt BigInt::operator - (const BigInt& other) const {
 	return result;
 }
 
-std::deque<uint32_t> BigInt::MultiplyValues(const BigInt& other) const {
-	uint32_t resultLen = value.size() + other.value.size();
-	std::deque<uint32_t> result(resultLen - 1);
-	uint32_t carry = 0; // stores the MSBits that result from the 32bit x 32bit product
-	for (uint32_t i = 0; i < value.size(); i++){
-		uint64_t a = value[i];
-		for (uint32_t j = 0; j < other.value.size(); j++){
-			uint64_t b = other.value[j];
-			uint64_t prod = a * b + carry;
-			// split in two 32 bit cells
-			result[i + j] += uint32_t(prod);
-			carry = uint32_t(prod >> 32);
-		}
-	}
-	if (carry != 0)
-		result.push_back(carry);
-	return result;
-}
-
-BigInt BigInt::Divide(const BigInt& other) const {
-	// At the moment, division is simply repeated subtraction
-	BigInt result(0ll);
-	BigInt dividend = *this;
-	BigInt divisor = other;
-
-	while (dividend >= divisor){
-		dividend -= divisor;
-		result += BigInt(1); // result++
-
-		std::cout <<
-			"\n- dividend: " << dividend <<
-			"\n- result: " << result << '\n';
-	}
-
-	return result;
-}
-
 BigInt BigInt::operator * (const BigInt& other) const {
 	BigInt result;
 	result.neg = neg ^ other.neg;
@@ -174,19 +136,41 @@ BigInt BigInt::operator * (const BigInt& other) const {
 
 BigInt BigInt::operator / (const BigInt& other) const {
 	BigInt result;
-	result = this->Divide(other);
+	result = this->DivideTemporary(other);
 	result.neg = neg ^ other.neg;
 	return result;
 }
 
-void BigInt::operator+=(const BigInt& other)
+BigInt BigInt::operator % (const BigInt& other) const {
+	BigInt result;
+	result = this->RemainderTemporary(other);
+	result.neg = neg ^ other.neg;
+	return result;
+}
+
+void BigInt::operator += (const BigInt& other)
 {
 	*this = *this + other;
 }
 
-void BigInt::operator-=(const BigInt& other)
+void BigInt::operator -= (const BigInt& other)
 {
 	*this = *this - other;
+}
+
+void BigInt::operator*=(const BigInt& other)
+{
+	*this = *this * other;
+}
+
+void BigInt::operator/=(const BigInt& other)
+{
+	*this = *this / other;
+}
+
+void BigInt::operator %= (const BigInt& other)
+{
+	*this = *this % other;
 }
 
 // change sign
@@ -199,6 +183,134 @@ BigInt BigInt::operator - () const {
 BigInt BigInt::operator + () const {
 	BigInt res = *this;
 	return res;
+}
+
+BigInt BigInt::pow(int64_t exponent)
+{
+	BigInt one(1ll);
+	if (exponent < 0) {
+		if (exponent == -1 && *this == one) return one;
+		std::cout << "Negative exponent of BigInt returns 0.\n";
+		return BigInt(0ll);
+	}
+
+	BigInt result(1ll);
+	for (int i = 0; i < exponent; i++) {
+		result *= (* this);
+	}
+	return result;
+}
+
+BigInt BigInt::pow(const BigInt& exponent)
+{
+	BigInt zero(0ll);
+	BigInt one(1ll);
+	if (exponent < zero) {
+		if (exponent == -one && *this == one) return one;
+		std::cout << "Negative exponent of BigInt returns 0.\n";
+		return one;
+	}
+
+	BigInt result(1ll);
+	for (BigInt i = zero; i < exponent; i += one) {
+		result *= (*this);
+	}
+	return result;
+}
+
+// ********************************************************
+
+std::deque<uint32_t> BigInt::MultiplyValues(const BigInt& other) const {
+	uint32_t resultLen = value.size() + other.value.size();
+	std::deque<uint32_t> result(resultLen - 1);
+	uint32_t carry = 0; // stores the MSBits that result from the 32bit x 32bit product
+	for (uint32_t i = 0; i < value.size(); i++) {
+		uint64_t a = value[i];
+		for (uint32_t j = 0; j < other.value.size(); j++) {
+			uint64_t b = other.value[j];
+			uint64_t prod = a * b + carry;
+			// split in two 32 bit cells
+			result[i + j] += uint32_t(prod);
+			carry = uint32_t(prod >> 32);
+		}
+	}
+	if (carry != 0)
+		result.push_back(carry);
+	return result;
+}
+
+// Crappy division (by iterative subtraction)
+BigInt BigInt::DivideTemporary(const BigInt& other) const {
+	BigInt result(0ll);
+	BigInt dividend = *this;
+	BigInt divisor = other;
+
+	while (dividend >= divisor) {
+		dividend -= divisor;
+		result += BigInt(1); // result++
+
+		std::cout <<
+			"\n- dividend: " << dividend <<
+			"\n- result: " << result << '\n';
+	}
+
+	return result;
+}
+
+// Crappy % (by iterative subtraction)
+BigInt BigInt::RemainderTemporary(const BigInt& other) const {
+	BigInt dividend = *this;
+	BigInt divisor = other;
+
+	while (dividend >= divisor) {
+		dividend -= divisor;
+
+		std::cout <<
+			"\n- dividend: " << dividend << '\n';
+	}
+	return dividend;
+}
+
+
+BigInt BigInt::Divide(const BigInt& other) const {
+	BigInt result(0ll);
+
+	//  Division is relatively complex because it must test
+	//	quotients each time.The quotient test procedure must recur to
+	//	multiplication and subtraction of unlimited integers.For
+	//	example, there are unlimited integers A, B, C and D.A is the
+	//	dividend, B(B != O and A > B) is the divisor, C will be the
+	//	quotient and D will be the remainder.
+	//  The division arithmetic can be described as following steps:
+	//  1) Copy the highest part of A with the length of B to D, and 
+	//     then insert an element 0 to the end ofinteger queue of D;
+
+	//  2) 
+	//     If D < B, then insert an element 0 to the lower position of C,
+	//	             it means this quotient digital is 0;
+
+	//     If D = B, then insert an element 1 to the lower position of C, it
+	//               means this quotient digital is 1, and do D = D - B;
+
+	//     If D > B, then try to find the quotient as following steps :
+
+	// (1) Copying the highest two digital of D to variable d2
+	//     (unsigned _int64), copy the highest one digital ofB to
+	//     variable b(unsigned _int64), assuming q(unsigned_int64) 
+	//     is the tried quotient;
+
+	// (2) Minimum of q is d2 / (b + 1), maximum of q is min(d2 / b+1),
+	//     by dichotomy, it is possible to find one suitable
+	//     q settle for D <= B * (q + 1) and D >= B * q.At this time, the
+	//     right quotient must be q or q + 1, ifD < B* (q + 1) then the
+	//     quotient is q, else the quotient is q + 1. The quotient
+	//     would be inserted to the lower position of C;
+
+	// (3) Subtract the product ofBand the quotient from D.
+	//     Temporally the highest digital ofD must be 0, because
+	//     D < B, and the length ofD is 1 digital more than B;
+
+	return result;
 }
 
 #pragma endregion
@@ -241,10 +353,6 @@ bool BigInt::operator <= (const BigInt& other) const {
 	return true;
 }
 
-//bool BigInt::operator > (const BigInt& other) const {
-//	if (!(*this < other) && *this != other) return true;
-//}
-
 bool BigInt::operator >= (const BigInt& other) const {
 	// infer by sign (if left negative false)
 	if (this->neg != other.neg) {
@@ -275,11 +383,58 @@ bool BigInt::operator > (const BigInt& other) const {
 	return true;
 }
 
+#pragma endregion
 
+/*
+* *******************************************************************
+* BITWISE OPERATORS
+* *******************************************************************
+*/
+#pragma region bitwiseop
+
+BigInt BigInt::operator&(const BigInt&) const{
+
+}
+
+BigInt BigInt::operator|(const BigInt&) const{
+
+}
+
+BigInt BigInt::operator^(const BigInt&) const{
+
+}
+
+BigInt BigInt::operator>>(const BigInt&) const{
+
+}
+
+BigInt BigInt::operator<<(const BigInt&) const{
+
+}
+
+void BigInt::operator&=(const BigInt&){
+
+}
+
+void BigInt::operator |= (const BigInt&) {
+
+}
+void BigInt::operator ^= (const BigInt&) {
+
+}
+void BigInt::operator >>= (const BigInt&) {
+
+}
+void BigInt::operator <<= (const BigInt&) {
+
+}
 
 
 
 #pragma endregion
+
+
+
 
 /*
 * *******************************************************************

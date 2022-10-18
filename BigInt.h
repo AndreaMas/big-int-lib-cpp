@@ -30,7 +30,8 @@ public:
 	void operator %= (const BigInt&);
 	BigInt operator - () const;
 	BigInt operator + () const;
-	BigInt pow(const BigInt&, int);
+	BigInt pow(int64_t);
+	BigInt pow(const BigInt&);
 	// comparisons
 	bool operator == (const BigInt&) const;
 	bool operator != (const BigInt&) const;
@@ -56,7 +57,10 @@ public:
 private:
 	// helpers
 	void TrimZeros();
+	// algebra internal functions
 	std::deque<uint32_t> MultiplyValues(const BigInt& other) const;
+	BigInt DivideTemporary(const BigInt& other) const;
+	BigInt RemainderTemporary(const BigInt& other) const;
 	BigInt Divide(const BigInt& other) const;
 	std::deque<uint32_t> DivideValues(const BigInt& other) const;
 };
