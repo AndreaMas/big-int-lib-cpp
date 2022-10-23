@@ -102,6 +102,20 @@ void CheckDiv() {
         "\nRES\n" << res << std::endl;
 	assert(res == expected);
 }
+void CheckBitOps() {
+	BigInt a(500000000);
+	BigInt b(500000000);
+	BigInt expectedAnd(500000000);
+	BigInt expectedOr(500000000);
+	BigInt expectedXor(0ll);
+	BigInt res;
+	res = a & b;
+	assert(res == expectedAnd);
+	res = a | b;
+	assert(res == expectedOr);
+	res = a ^ b;
+	assert(res == expectedXor);
+}
 #pragma endregion
 
 
@@ -112,10 +126,11 @@ int main()
         std::cout << "Runtime checks!\n";
         //CheckStringConstructor();
         //CheckBigIntToStringAndViceversa();
-        //CheckSum2();
-        //CheckSub2();
-        //CheckMul();
+        CheckSum2();
+        CheckSub2();
+        CheckMul();
         CheckDiv();
+        CheckBitOps();
     }
     
 

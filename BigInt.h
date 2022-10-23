@@ -58,9 +58,10 @@ private:
 	// helpers
 	void TrimZeros();
 	// algebra internal functions
+	template<typename T> void ValueBitOps(const BigInt& left, const BigInt& right, T&& lambdaFunc);
+	void ValueBitwiseOps(const BigInt& left, const BigInt& right);
 	std::deque<uint32_t> MultiplyValues(const BigInt& other) const;
 	BigInt DivideTemporary(const BigInt& other) const;
 	BigInt RemainderTemporary(const BigInt& other) const;
 	BigInt Divide(const BigInt& other) const;
-	std::deque<uint32_t> DivideValues(const BigInt& other) const;
 };

@@ -63,12 +63,11 @@ BigInt BigInt::operator + (const BigInt& other) const {
 	// if signs differ call sub instead
 	if (neg != other.neg)
 		return *this - (-other);
-	// prepare for sum
+	// sign
 	BigInt result;
 	result.neg = neg;
+	// prepare for sum
 	uint32_t carry = 0;
-	uint64_t a = 0;
-	uint64_t b = 0;
 	uint32_t res32 = 0;
 	uint64_t res64 = 0;
 	const uint32_t numCellsA = value.size();
@@ -76,8 +75,8 @@ BigInt BigInt::operator + (const BigInt& other) const {
 	const uint32_t maxCells = std::max(numCellsA, numCellsB);
 	// sum betw all cells
 	for (uint32_t i = 0; i < maxCells || carry != 0; i++) {
-		a = (numCellsA > i) ? value.at(i) : 0;
-		b = (numCellsB > i) ? other.value.at(i) : 0;
+		uint64_t a = (numCellsA > i) ? value[i] : 0;
+		uint64_t b = (numCellsB > i) ? other.value[i] : 0;
 		res64 = a + b + carry;
 		// cut 64bit result into 32bit halves, left is carry
 		res32 = (uint32_t)(res64);
@@ -91,24 +90,23 @@ BigInt BigInt::operator - (const BigInt& other) const {
 	// if signs differ call sum instead
 	if (neg != other.neg)
 		return *this + (-other);
-	// if left < right re-call, swapped, with !signs
-	if (*this < other)
+	// if left operand has less cells re-call, swapped, with !signs
+	const uint32_t nCellsA = value.size();
+	const uint32_t nCellsB = other.value.size();
+	if (nCellsA < nCellsB)
 		return -other - (-(*this));
-	// prepare for sub
+	// sign
 	BigInt result;
 	result.neg = neg;
+	// prepare for sub
 	uint64_t carry = 0;
-	uint64_t a = 0;
-	uint64_t b = 0;
 	uint64_t b2 = 0;
 	uint32_t res32 = 0;
 	const uint64_t twoPow32 = (uint64_t)UINT32_MAX + 1;
-	const uint32_t numCellsA = value.size();
-	const uint32_t numCellsB = other.value.size();
 	// sub betw all cells
-	for (uint32_t i = 0; i < numCellsA; i++) {
-		a = value.at(i);
-		b = (numCellsB > i) ? other.value.at(i) : 0;
+	for (uint32_t i = 0; i < nCellsA; i++) {
+		uint64_t a = value[i];
+		uint64_t b = (nCellsB > i) ? other.value[i] : 0;
 
 		b2 = b + carry;
 		if (b2 <= a) {
@@ -119,8 +117,8 @@ BigInt BigInt::operator - (const BigInt& other) const {
 			res32 = a + twoPow32 - b2;
 			carry = 1;
 		}
-		// if is first element and is 0 don't push (this causes bigint=0 to be "empty")
-		if (!(i == numCellsA - 1 && res32 == 0))
+		// if is first element and is 0 don't push
+		if (!(i == nCellsA - 1 && res32 == 0))
 			result.value.push_back(res32);
 	}
 	if (result.value.size() == 0) result.value.push_back(0ll); // if bigint "empty" push 0
@@ -128,9 +126,28 @@ BigInt BigInt::operator - (const BigInt& other) const {
 }
 
 BigInt BigInt::operator * (const BigInt& other) const {
+	// sign
 	BigInt result;
 	result.neg = neg ^ other.neg;
-	result.value = this->MultiplyValues(other); // deque deep copy
+	// zero pad result (dimension is sum of operand dimensions)
+	//for (int i = 0; i < value.size() + other.value.size(); i++) {
+	//	result.value.push_back(0); // TODO: is there more efficient way?
+	//}
+	//// product betw cells
+	//uint32_t carry = 0; // stores the MSBits that result from the 32bit x 32bit product
+	//for (uint32_t i = 0; i < value.size(); i++) {
+	//	uint64_t a = value[i];
+	//	for (uint32_t j = 0; j < other.value.size(); j++) {
+	//		uint64_t b = other.value[j];
+	//		uint64_t prod = a * b + carry;
+	//		// split in two 32 bit cells
+	//		result.value[i + j] += uint32_t(prod);
+	//		carry = uint32_t(prod >> 32);
+	//	}
+	//}
+	//if (carry != 0)
+	//	result.value.push_back(carry);
+	result.value= this->MultiplyValues(other);
 	return result;
 }
 
@@ -273,7 +290,7 @@ BigInt BigInt::RemainderTemporary(const BigInt& other) const {
 
 
 BigInt BigInt::Divide(const BigInt& other) const {
-	BigInt result(0ll);
+	BigInt result;
 
 	//  Division is relatively complex because it must test
 	//	quotients each time.The quotient test procedure must recur to
@@ -294,21 +311,27 @@ BigInt BigInt::Divide(const BigInt& other) const {
 
 	//     If D > B, then try to find the quotient as following steps :
 
-	// (1) Copying the highest two digital of D to variable d2
-	//     (unsigned _int64), copy the highest one digital ofB to
-	//     variable b(unsigned _int64), assuming q(unsigned_int64) 
-	//     is the tried quotient;
+	//	     (1) Copying the highest two digital of D to variable d2
+	//           (unsigned _int64), copy the highest one digital ofB to
+	//           variable b(unsigned _int64), assuming q(unsigned_int64) 
+	//           is the tried quotient;
 
-	// (2) Minimum of q is d2 / (b + 1), maximum of q is min(d2 / b+1),
-	//     by dichotomy, it is possible to find one suitable
-	//     q settle for D <= B * (q + 1) and D >= B * q.At this time, the
-	//     right quotient must be q or q + 1, ifD < B* (q + 1) then the
-	//     quotient is q, else the quotient is q + 1. The quotient
-	//     would be inserted to the lower position of C;
+	//       (2) Minimum of q is d2 / (b + 1), maximum of q is min(d2 / b+1),
+	//           by dichotomy, it is possible to find one suitable
+	//           q settle for D <= B * (q + 1) and D >= B * q.At this time, the
+	//           right quotient must be q or q + 1, ifD < B* (q + 1) then the
+	//           quotient is q, else the quotient is q + 1. The quotient
+	//           would be inserted to the lower position of C;
 
-	// (3) Subtract the product ofBand the quotient from D.
-	//     Temporally the highest digital ofD must be 0, because
-	//     D < B, and the length ofD is 1 digital more than B;
+	//       (3) Subtract the product ofBand the quotient from D.
+	//           Temporally the highest digital ofD must be 0, because
+	//           D < B, and the length ofD is 1 digital more than B;
+
+	//  3) Insert the next digital from A to the lower position of D, and
+	//     delete the highest element of D(it is 0), and repeat step 2
+	//     until all elements of A has been treated
+
+	//  4) D is the remainder.
 
 	return result;
 }
@@ -348,7 +371,7 @@ bool BigInt::operator <= (const BigInt& other) const {
 	}
 	// compare cells
 	for (uint64_t i = 0; i < sizeL; i++) {
-		if (this->value.at(i) > other.value.at(i)) return false;
+		if (this->value[i] > other.value[i]) return false;
 	}
 	return true;
 }
@@ -368,7 +391,7 @@ bool BigInt::operator >= (const BigInt& other) const {
 	}
 	// compare cells
 	for (uint64_t i = 0; i < sizeL; i++) {
-		if (this->value.at(i) < other.value.at(i)) return false;
+		if (this->value[i] < other.value[i]) return false;
 	}
 	return true;
 }
@@ -392,41 +415,67 @@ bool BigInt::operator > (const BigInt& other) const {
 */
 #pragma region bitwiseop
 
-BigInt BigInt::operator&(const BigInt&) const{
-
+template<typename T>
+void BigInt::ValueBitOps(const BigInt& left, const BigInt& right, T&& lambdaFuncBitOp) { // TODO: are templates good practice for lambdas?
+	this->value.clear();
+	uint32_t nCellsA = left.value.size();
+	uint32_t nCellsB = right.value.size();
+	uint32_t nMaxCells = std::max(nCellsA, nCellsB);
+	for (int i = 0; i < nMaxCells; i++) {
+		uint32_t a = (nCellsA > i) ? left.value.at(i) : 0;
+		uint32_t b = (nCellsB > i) ? right.value.at(i) : 0;
+		uint32_t r = lambdaFuncBitOp(a,b); // bitwise operation
+		this->value.push_back(r);
+	}
+	this->TrimZeros();
 }
 
-BigInt BigInt::operator|(const BigInt&) const{
-
+BigInt BigInt::operator&(const BigInt& other) const{
+	BigInt result;
+	auto funcBitwiseAnd = [](uint32_t a, uint32_t b) -> uint32_t { return a & b; }; // lambda &
+	result.ValueBitOps(*this, other, funcBitwiseAnd);
+	return result;
 }
 
-BigInt BigInt::operator^(const BigInt&) const{
+BigInt BigInt::operator|(const BigInt& other) const{
+	BigInt result;
+	auto funcBitwiseOr = [](uint32_t a, uint32_t b) -> uint32_t { return a | b; }; // lambda |
+	result.ValueBitOps(*this, other, funcBitwiseOr);
+	return result;
+}
 
+BigInt BigInt::operator^(const BigInt& other) const{
+	BigInt result;
+	auto funcBitwiseXor = [](uint32_t a, uint32_t b) -> uint32_t { return a ^ b; }; // lambda ^
+	result.ValueBitOps(*this, other, funcBitwiseXor);
+	return result;
 }
 
 BigInt BigInt::operator>>(const BigInt&) const{
-
+	BigInt result;
+	return result;
 }
 
 BigInt BigInt::operator<<(const BigInt&) const{
-
+	BigInt result;
+	return result;
 }
 
-void BigInt::operator&=(const BigInt&){
-
+void BigInt::operator&=(const BigInt& other){
+	return *this = *this & other;
 }
 
-void BigInt::operator |= (const BigInt&) {
-
+void BigInt::operator |= (const BigInt& other) {
+	return *this = *this | other;
 }
-void BigInt::operator ^= (const BigInt&) {
-
+void BigInt::operator ^= (const BigInt& other) {
+	return *this = *this ^ other;
 }
-void BigInt::operator >>= (const BigInt&) {
-
+void BigInt::operator >>= (const BigInt& other) {
+	return *this = *this >> other;
 }
-void BigInt::operator <<= (const BigInt&) {
-
+void BigInt::operator <<= (const BigInt& other) {
+	return *this = *this << other;
 }
 
 
