@@ -4,6 +4,7 @@
 #include <vector>
 #include <limits>
 #include <string>
+#include <bitset>
 
 
 /*
@@ -130,24 +131,23 @@ BigInt BigInt::operator * (const BigInt& other) const {
 	BigInt result;
 	result.neg = neg ^ other.neg;
 	// zero pad result (dimension is sum of operand dimensions)
-	//for (int i = 0; i < value.size() + other.value.size(); i++) {
-	//	result.value.push_back(0); // TODO: is there more efficient way?
-	//}
-	//// product betw cells
-	//uint32_t carry = 0; // stores the MSBits that result from the 32bit x 32bit product
-	//for (uint32_t i = 0; i < value.size(); i++) {
-	//	uint64_t a = value[i];
-	//	for (uint32_t j = 0; j < other.value.size(); j++) {
-	//		uint64_t b = other.value[j];
-	//		uint64_t prod = a * b + carry;
-	//		// split in two 32 bit cells
-	//		result.value[i + j] += uint32_t(prod);
-	//		carry = uint32_t(prod >> 32);
-	//	}
-	//}
-	//if (carry != 0)
-	//	result.value.push_back(carry);
-	result.value= this->MultiplyValues(other);
+	for (int i = 0; i < value.size() + other.value.size() - 1; i++) {
+		result.value.push_back(0); // TODO: is there more efficient way?
+	}
+	// product betw cells
+	uint32_t carry = 0; // stores the MSBits that result from the 32bit x 32bit product
+	for (uint32_t i = 0; i < value.size(); i++) {
+		uint64_t a = value.at(i);
+		for (uint32_t j = 0; j < other.value.size(); j++) {
+			uint64_t b = other.value.at(j);
+			uint64_t prod = a * b + carry;
+			// split in two 32 bit cells
+			result.value.at(i+j) += uint32_t(prod);
+			carry = uint32_t(prod >> 32);
+		}
+	}
+	if (carry != 0)
+		result.value.push_back(carry);
 	return result;
 }
 
@@ -165,7 +165,7 @@ BigInt BigInt::operator % (const BigInt& other) const {
 	return result;
 }
 
-void BigInt::operator += (const BigInt& other)
+void BigInt::operator += (const BigInt& other) // TODO: avoid creating a new BigInt to assign to *this (huge refactor necessary)
 {
 	*this = *this + other;
 }
@@ -207,7 +207,7 @@ BigInt BigInt::pow(int64_t exponent)
 	BigInt one(1ll);
 	if (exponent < 0) {
 		if (exponent == -1 && *this == one) return one;
-		std::cout << "Negative exponent of BigInt returns 0.\n";
+		std::cout << "If exponent negative always returns 1.\n";
 		return BigInt(0ll);
 	}
 
@@ -224,7 +224,7 @@ BigInt BigInt::pow(const BigInt& exponent)
 	BigInt one(1ll);
 	if (exponent < zero) {
 		if (exponent == -one && *this == one) return one;
-		std::cout << "Negative exponent of BigInt returns 0.\n";
+		std::cout << "If exponent negative always returns 1.\n";
 		return one;
 	}
 
@@ -237,6 +237,7 @@ BigInt BigInt::pow(const BigInt& exponent)
 
 // ********************************************************
 
+//Alternative multiplication call: result.value= this->MultiplyValues(other);
 std::deque<uint32_t> BigInt::MultiplyValues(const BigInt& other) const {
 	uint32_t resultLen = value.size() + other.value.size();
 	std::deque<uint32_t> result(resultLen - 1);
@@ -363,14 +364,14 @@ bool BigInt::operator <= (const BigInt& other) const {
 		else return false;
 	}
 	// infer by number of cells (left and right)
-	uint64_t sizeL = this->value.size();
-	uint64_t sizeR = other.value.size();
+	uint32_t sizeL = this->value.size();
+	uint32_t sizeR = other.value.size();
 	if (sizeL != sizeR) {
 		if (sizeL < sizeR) return true;
 		if (sizeL > sizeR) return false;
 	}
 	// compare cells
-	for (uint64_t i = 0; i < sizeL; i++) {
+	for (uint32_t i = 0; i < sizeL; i++) {
 		if (this->value[i] > other.value[i]) return false;
 	}
 	return true;
@@ -383,14 +384,14 @@ bool BigInt::operator >= (const BigInt& other) const {
 		else return true;
 	}
 	// infer by number of cells (left and right)
-	uint64_t sizeL = this->value.size();
-	uint64_t sizeR = other.value.size();
+	uint32_t sizeL = this->value.size();
+	uint32_t sizeR = other.value.size();
 	if (sizeL != sizeR) {
 		if (sizeL < sizeR) return false;
 		if (sizeL > sizeR) return true;
 	}
 	// compare cells
-	for (uint64_t i = 0; i < sizeL; i++) {
+	for (uint32_t i = 0; i < sizeL; i++) {
 		if (this->value[i] < other.value[i]) return false;
 	}
 	return true;
@@ -410,24 +411,42 @@ bool BigInt::operator > (const BigInt& other) const {
 
 /*
 * *******************************************************************
+* INCREMENT, DECREMENT
+* *******************************************************************
+*/
+
+void BigInt::operator ++ ()
+{
+	BigInt one(1ll);
+	*this += one;
+}
+
+void BigInt::operator -- ()
+{
+	BigInt one(1ll);
+	*this -= one;
+}
+
+/*
+* *******************************************************************
 * BITWISE OPERATORS
 * *******************************************************************
 */
 #pragma region bitwiseop
 
 template<typename T>
-void BigInt::ValueBitOps(const BigInt& left, const BigInt& right, T&& lambdaFuncBitOp) { // TODO: are templates good practice for lambdas?
+void BigInt::ValueBitOps(const BigInt& left, const BigInt& right, T&& lambdaFunc) { // TODO: are templates good practice for lambdas?
 	this->value.clear();
-	uint32_t nCellsA = left.value.size();
-	uint32_t nCellsB = right.value.size();
-	uint32_t nMaxCells = std::max(nCellsA, nCellsB);
+	const uint32_t nCellsA = left.value.size();
+	const uint32_t nCellsB = right.value.size();
+	const uint32_t nMaxCells = std::max(nCellsA, nCellsB);
 	for (int i = 0; i < nMaxCells; i++) {
-		uint32_t a = (nCellsA > i) ? left.value.at(i) : 0;
-		uint32_t b = (nCellsB > i) ? right.value.at(i) : 0;
-		uint32_t r = lambdaFuncBitOp(a,b); // bitwise operation
+		uint32_t a = (nCellsA > i) ? left.value[i] : 0;
+		uint32_t b = (nCellsB > i) ? right.value[i] : 0;
+		uint32_t r = lambdaFunc(a,b); // bitwise operation
 		this->value.push_back(r);
 	}
-	this->TrimZeros();
+	this->RemoveZeroCells();
 }
 
 BigInt BigInt::operator&(const BigInt& other) const{
@@ -451,13 +470,53 @@ BigInt BigInt::operator^(const BigInt& other) const{
 	return result;
 }
 
-BigInt BigInt::operator>>(const BigInt&) const{
-	BigInt result;
+BigInt BigInt::operator>>(const BigInt& shift) const{
+	// check of how many cells and bits we need to shift
+	BigInt result = *this;
+	BigInt cellShift = shift / BigInt(32);
+	BigInt bitShift = shift % BigInt(32);
+	if (cellShift >= value.size()) return BigInt(0ll);
+	// shift whole cells (by removing LSB cells)
+	for (BigInt i(0ll); i < cellShift; ++i) {
+		result.value.pop_front();
+	}
+	// shift single bits
+	uint32_t carry = 0; // stores the overflown bits of cell >> amount
+	for (uint32_t i = result.value.size() - 1; i != UINT32_MAX; i--) {
+		uint64_t a = uint64_t( result.value[i] ) << 32;
+		uint64_t shifted = a >> bitShift.value.at(0); // TODO: refactor, use a cast BigInt to uint32_t
+		shifted += uint64_t(carry) << 32;
+		// split in two 32 bit cells
+		result.value.at(i) = uint32_t(shifted >> 32);
+		carry = uint32_t(shifted);
+	}
+	result.RemoveZeroCells();
 	return result;
 }
 
-BigInt BigInt::operator<<(const BigInt&) const{
-	BigInt result;
+BigInt BigInt::operator<<(const BigInt& shift) const{
+	// check of how many cells and bits we need to shift
+	BigInt result = *this;
+	BigInt nCells(value.size());
+	BigInt cellShift = shift / BigInt(32);
+	BigInt bitShift = shift % BigInt(32);
+	if (cellShift >= nCells) return BigInt(0ll);
+	// shift whole cells (by introducing zeros as LSB cells)
+	for (BigInt i(0ll); i < cellShift; ++i) {
+		result.value.push_front(0);
+	}
+	// shift single bits
+	uint32_t carry = 0; // stores the overflown bits of cell << amount
+	for (uint32_t i = 0; i < result.value.size(); i++) {
+		uint64_t cell64( result.value[i] );
+		uint64_t shifted = cell64 << bitShift.value.at(0);
+		shifted += carry;
+		// split in two 32 bit cells
+		result.value.at(i) = uint32_t(shifted);
+		carry = uint32_t(shifted >> 32);
+	}
+	if (carry != 0)
+		result.value.push_back(carry);
 	return result;
 }
 
@@ -471,11 +530,11 @@ void BigInt::operator |= (const BigInt& other) {
 void BigInt::operator ^= (const BigInt& other) {
 	return *this = *this ^ other;
 }
-void BigInt::operator >>= (const BigInt& other) {
-	return *this = *this >> other;
+void BigInt::operator >>= (const BigInt& shift) {
+	return *this = *this >> shift;
 }
-void BigInt::operator <<= (const BigInt& other) {
-	return *this = *this << other;
+void BigInt::operator <<= (const BigInt& shift) {
+	return *this = *this << shift;
 }
 
 
@@ -491,7 +550,7 @@ void BigInt::operator <<= (const BigInt& other) {
 * *******************************************************************
 */
 #pragma region utilities
-void BigInt::TrimZeros()
+void BigInt::RemoveZeroCells()
 {
 	auto iter = value.rbegin();
 
@@ -515,7 +574,7 @@ void BigInt::TrimZeros()
 #pragma region stringOps
 
 std::ostream& operator << (std::ostream& os, const BigInt& bigint) {
-	return os << "\n ~ " << bigint.BigintToString() << " ~ \n";
+	return os << "\n ~ " << bigint.BigintToBinaryString() << " ~ \n";
 }
 
 std::string BigInt::BigintToString() const
@@ -524,24 +583,41 @@ std::string BigInt::BigintToString() const
 	std::string result = neg ? "-" : "";
 
 	//
-	int cellIndex = 0;
+	//int cellIndex = 0;
 	for (auto iter = value.rbegin(); iter != value.rend(); iter++) {
 		uint32_t cellValue = *iter;
-		//printf("- cell %d --> %010u\n", (int)cellIndex, cellValue);
+		//printf("- cell %02d --> %010u\n", (int)cellIndex, cellValue);
 		std::string s = std::to_string(cellValue);
-		std::string zerostr = "0";
-
+		
 		// cell zero-padding
-		if (iter != value.rbegin()) {
+		std::string zerostr = "0";
+		//if (iter != value.rbegin()) {
 			int numZeros = CELL_NUM_DIGITS - s.size();
 			for (int i = 0; i < numZeros; i++) {
 				s = zerostr + s; // TODO: refactor
 			}
-		}
+		//}
 
 		result.append(s);
 		result.append(".");
-		cellIndex++;
+		//cellIndex++;
+	}
+	return result;
+}
+
+std::string BigInt::BigintToBinaryString() const
+{
+	if (value.size() == 0) return "Empty";
+	std::string result = neg ? "-" : "";
+
+	//
+	for (auto iter = value.rbegin(); iter != value.rend(); iter++) {
+		std::bitset<32> bitCell(*iter);
+		//printf("- cell %02d --> %010u\n", (int)cellIndex, cellValue);
+		std::string s = bitCell.to_string();
+
+		result.append(s);
+		result.append(".");
 	}
 	return result;
 }

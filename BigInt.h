@@ -7,7 +7,7 @@ const int CELL_NUM_DIGITS = 10;
 const uint32_t CELL_MAX = UINT32_MAX;
 
 class BigInt {
-private:
+public:
 	std::deque<uint32_t> value;
 	bool neg; // is negative
 public:
@@ -39,6 +39,9 @@ public:
 	bool operator >= (const BigInt&) const;
 	bool operator < (const BigInt&) const;
 	bool operator > (const BigInt&) const;
+	// increment decrement
+	void operator ++ ();
+	void operator -- ();
 	// bitwise ops
 	BigInt operator & (const BigInt&) const;
 	BigInt operator | (const BigInt&) const;
@@ -53,13 +56,13 @@ public:
 	// print & string ops
 	friend std::ostream& operator << (std::ostream&, const BigInt&);
 	std::string BigintToString() const;
+	std::string BigintToBinaryString() const;
 	void StringToBigint(const std::string&);
 private:
 	// helpers
-	void TrimZeros();
+	void RemoveZeroCells();
 	// algebra internal functions
-	template<typename T> void ValueBitOps(const BigInt& left, const BigInt& right, T&& lambdaFunc);
-	void ValueBitwiseOps(const BigInt& left, const BigInt& right);
+	template<typename T>void ValueBitOps(const BigInt& left, const BigInt& right, T&& lambdaFunc);
 	std::deque<uint32_t> MultiplyValues(const BigInt& other) const;
 	BigInt DivideTemporary(const BigInt& other) const;
 	BigInt RemainderTemporary(const BigInt& other) const;

@@ -116,6 +116,14 @@ void CheckBitOps() {
 	res = a ^ b;
 	assert(res == expectedXor);
 }
+void CheckBitShifts() {
+	BigInt a(500000000);
+	BigInt b(50);
+	BigInt res = a.pow(b);
+	std::cout << "A: " << res << "\n--------------\n";
+	a = a >> b;
+	std::cout << "A_shifted: " << a << "\n--------------\n";
+}
 #pragma endregion
 
 
@@ -126,11 +134,20 @@ int main()
         std::cout << "Runtime checks!\n";
         //CheckStringConstructor();
         //CheckBigIntToStringAndViceversa();
-        CheckSum2();
-        CheckSub2();
-        CheckMul();
-        CheckDiv();
-        CheckBitOps();
+        //CheckSum2();
+        //CheckSub2();
+        //CheckMul();
+        //CheckDiv();
+        //CheckBitOps();
+        //CheckBitShifts();
+
+		BigInt a(9000000000);
+		std::cout << "A:" << a << '\n';
+
+		//a.value.push_back(0);
+		a = a >> BigInt(32);
+		std::cout << "A2:" << a << '\n';
+
     }
     
 
