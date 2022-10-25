@@ -7,7 +7,7 @@ const int CELL_NUM_DIGITS = 10;
 const uint32_t CELL_MAX = UINT32_MAX;
 
 class BigInt {
-public:
+private:
 	std::deque<uint32_t> value;
 	bool neg; // is negative
 public:
@@ -66,5 +66,6 @@ private:
 	std::deque<uint32_t> MultiplyValues(const BigInt& other) const;
 	BigInt DivideTemporary(const BigInt& other) const;
 	BigInt RemainderTemporary(const BigInt& other) const;
-	BigInt Divide(const BigInt& other) const;
+public:
+	BigInt Divide(const BigInt& other, BigInt& remainder) const;
 };

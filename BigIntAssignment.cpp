@@ -117,12 +117,12 @@ void CheckBitOps() {
 	assert(res == expectedXor);
 }
 void CheckBitShifts() {
-	BigInt a(500000000);
-	BigInt b(50);
-	BigInt res = a.pow(b);
-	std::cout << "A: " << res << "\n--------------\n";
-	a = a >> b;
-	std::cout << "A_shifted: " << a << "\n--------------\n";
+	BigInt a(9000000000);
+	std::cout << "A:" << a << '\n';
+	BigInt b = a >> BigInt(33);
+	BigInt c = a << BigInt(33);
+	std::cout << "A shifted right:" << b << '\n';
+	std::cout << "A shifted left:" << c << '\n';
 }
 #pragma endregion
 
@@ -140,56 +140,40 @@ int main()
         //CheckDiv();
         //CheckBitOps();
         //CheckBitShifts();
-
-		BigInt a(9000000000);
-		std::cout << "A:" << a << '\n';
-
-		//a.value.push_back(0);
-		a = a >> BigInt(32);
-		std::cout << "A2:" << a << '\n';
-
     }
     
 
     //BigInt a("-111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
     //BigInt b("-111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
 
-
-
- //   a += b;
- //   b += a;
-
-	//std::cout << "A: " << std::endl << a << std::endl;
-	//std::cout << "B: " << std::endl << b << std::endl;
-
-	//for (int i = 0; i < 10; i++) {
-	//	std::cout << "A: " << std::endl << a << std::endl;
-	//	a = a + b;
- //       b = b + a;
-	//}
-
-
-
-
     // Yet to do:
-	//BigInt x(1999999999);
-    //BigInt y(1999999999);
-    //BigInt z = x + y;
-    //BigInt w("987654356789"); 
-    //y = pow(x, 10);
-    //BigInt z = x; // copy constructor
-    //z = x; // operator =
-    //z += y; // operator +, +=, -, -=, *, *=, /, /=, %, %=
-    //z %= y;
-    //z %= 5; // same operators of above, provide overloads for int or just convert int to BigInt?
-    //w++; // pre/post increment/decrement
-    //if (w <= y) { // all comparisons: <,>,<=,>=,==,!=
-    //    z &= x; // bitwise and, or, xor ...
-    //}
-    //std::cout << y; // stream operators
-    //x = -y; // signed/unsigned unary operator -
-    //x <<= 5; // shift operators
-    //w = pow(w,y);
+	BigInt x(1999999999999999);
+    BigInt y(199999999999999);
+	std::cout << "X : " << x;
+	std::cout << "Y : " << y;
+	BigInt z;
+	BigInt remainder;
+	z = x.Divide(y,remainder);
+ //   BigInt z = x + y;
+	//std::cout << "Z = X + Y : " << z;
+ //   //BigInt w("987654356789"); 
+ //   y = x.pow(10);
+	//std::cout << "Y = X ^ 10 : ";
+ //   BigInt e = x; // copy constructor
+ //   z = x; // operator =
+ //   z += y; // operator +, +=, -, -=, *, *=, /, /=, %, %=
+ //   z %= y;
+ //   //z %= 5; // same operators of above, provide overloads for int or just convert int to BigInt?
+	//BigInt w = x;
+ //   //w++; // pre/post increment/decrement
+ //   ++w;
+ //   if (w <= y) { // all comparisons: <,>,<=,>=,==,!=
+ //       z &= x; // bitwise and, or, xor ...
+ //   }
+ //   std::cout << y; // stream operators
+ //   x = -y; // signed/unsigned unary operator -
+ //   x <<= 5; // shift operators
+ //   w = w.pow(y);
 
     
 }

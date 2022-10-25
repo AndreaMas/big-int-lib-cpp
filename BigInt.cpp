@@ -290,51 +290,85 @@ BigInt BigInt::RemainderTemporary(const BigInt& other) const {
 }
 
 
-BigInt BigInt::Divide(const BigInt& other) const {
-	BigInt result;
-
+BigInt BigInt::Divide(const BigInt& other, BigInt& remainder) const {
+	if (other == BigInt(0ll)) {
+		std::cerr << "ERROR: dividing for zero." << std::endl;
+		return BigInt();
+	}
+	if (*this < other) return BigInt(0ll);
+	if (*this == other) return BigInt(1ll);
 	//  Division is relatively complex because it must test
 	//	quotients each time.The quotient test procedure must recur to
 	//	multiplication and subtraction of unlimited integers.For
 	//	example, there are unlimited integers A, B, C and D.A is the
 	//	dividend, B(B != O and A > B) is the divisor, C will be the
 	//	quotient and D will be the remainder.
+
+	BigInt A = *this, B = other, C(0ll), D(0ll); // dividend, divisor, quotient, remainder
+	bool resIsNeg = A.neg ^ B.neg;
+	B.neg = false; B.neg = false;
+	//  1.1) Check special cases
+	if (B == BigInt(0ll)) {
+		std::cerr << "ERROR: dividing for zero." << std::endl;
+		return BigInt();
+	}
+	if (B == BigInt(1ll)) {
+		A.neg = resIsNeg;
+		return A;
+	}
+	if (A < B) return BigInt(0ll);
+	if (A == B) return BigInt(1ll);
+
 	//  The division arithmetic can be described as following steps:
 	//  1) Copy the highest part of A with the length of B to D, and 
 	//     then insert an element 0 to the end ofinteger queue of D;
-
+	D = A;
+	D.value.erase(D.value.begin() + B.value.size(), D.value.end());
 	//  2) 
 	//     If D < B, then insert an element 0 to the lower position of C,
 	//	             it means this quotient digital is 0;
-
+	if (D < B) C.value.push_front(0);
 	//     If D = B, then insert an element 1 to the lower position of C, it
 	//               means this quotient digital is 1, and do D = D - B;
-
+	if (D == B) {
+		C.value.push_front(1);
+		D -= B;
+	}
 	//     If D > B, then try to find the quotient as following steps :
-
+	if (D > B) {
 	//	     (1) Copying the highest two digital of D to variable d2
-	//           (unsigned _int64), copy the highest one digital ofB to
+	//           (unsigned _int64), copy the highest one digital of B to
 	//           variable b(unsigned _int64), assuming q(unsigned_int64) 
 	//           is the tried quotient;
-
-	//       (2) Minimum of q is d2 / (b + 1), maximum of q is min(d2 / b+1),
+		uint64_t d2 = ((uint64_t)D.value[D.value.size() - 1] << 32) | (uint64_t)D.value[D.value.size() - 2];
+		uint64_t b = (uint64_t)D.value[D.value.size() - 1];
+		uint64_t q;
+	//       (2) Minimum of q is d2 / (b + 1), maximum of q is min ( (d2 / b+1), 2^32 - 1)
 	//           by dichotomy, it is possible to find one suitable
-	//           q settle for D <= B * (q + 1) and D >= B * q.At this time, the
-	//           right quotient must be q or q + 1, ifD < B* (q + 1) then the
+	//           q settle for D <= B * (q + 1) and D >= B * q. At this time, the
+	//           right quotient must be q or q + 1, if D < B * (q + 1) then the
 	//           quotient is q, else the quotient is q + 1. The quotient
 	//           would be inserted to the lower position of C;
+		//uint64_t qMin = d2 / (b + 1);
+		uint64_t qMin = std::min(d2 / (b + 1), b + 1);
+		uint64_t qMax = std::min(d2 / (b + 1), uint64_t(UINT32_MAX));
+		// by dichotomy, it is possible to find one suitable q settle for D <= B * (q + 1) and D >= B * q
+
+		q = (D < B * BigInt(q + 1)) ? q : q + 1;
 
 	//       (3) Subtract the product ofBand the quotient from D.
 	//           Temporally the highest digital ofD must be 0, because
 	//           D < B, and the length ofD is 1 digital more than B;
 
+	}
 	//  3) Insert the next digital from A to the lower position of D, and
 	//     delete the highest element of D(it is 0), and repeat step 2
 	//     until all elements of A has been treated
 
 	//  4) D is the remainder.
-
-	return result;
+	remainder = D;
+	C.neg = resIsNeg;
+	return C;
 }
 
 #pragma endregion
