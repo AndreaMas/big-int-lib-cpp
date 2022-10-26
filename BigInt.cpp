@@ -254,7 +254,7 @@ std::deque<uint32_t> BigInt::MultiplyValues(const BigInt& other) const {
 	}
 	if (carry != 0)
 		result.push_back(carry);
-	return result;
+return result;
 }
 
 // Crappy division (by iterative subtraction)
@@ -336,27 +336,33 @@ BigInt BigInt::Divide(const BigInt& other, BigInt& remainder) const {
 	}
 	//     If D > B, then try to find the quotient as following steps :
 	if (D > B) {
-	//	     (1) Copying the highest two digital of D to variable d2
-	//           (unsigned _int64), copy the highest one digital of B to
-	//           variable b(unsigned _int64), assuming q(unsigned_int64) 
-	//           is the tried quotient;
+		//	     (1) Copying the highest two digital of D to variable d2
+		//           (unsigned _int64), copy the highest one digital of B to
+		//           variable b(unsigned _int64), assuming q(unsigned_int64) 
+		//           is the tried quotient;
 		uint64_t d2 = ((uint64_t)D.value[D.value.size() - 1] << 32) | (uint64_t)D.value[D.value.size() - 2];
-		uint64_t b = (uint64_t)D.value[D.value.size() - 1];
-		uint64_t q;
-	//       (2) Minimum of q is d2 / (b + 1), maximum of q is min ( (d2 / b+1), 2^32 - 1)
-	//           by dichotomy, it is possible to find one suitable
-	//           q settle for D <= B * (q + 1) and D >= B * q. At this time, the
-	//           right quotient must be q or q + 1, if D < B * (q + 1) then the
-	//           quotient is q, else the quotient is q + 1. The quotient
-	//           would be inserted to the lower position of C;
-		//uint64_t qMin = d2 / (b + 1);
+		uint64_t b = (uint64_t)B.value[B.value.size() - 1];
+		uint64_t q = 0;
+		//       (2) Minimum of q is d2 / (b + 1), maximum of q is min ( (d2 / b+1), 2^32 - 1)
+		//           by dichotomy, it is possible to find one suitable
+		//           q settle for D <= B * (q + 1) and D >= B * q. At this time, the
+		//           right quotient must be q or q + 1, if D < B * (q + 1) then the
+		//           quotient is q, else the quotient is q + 1. The quotient
+		//           would be inserted to the lower position of C;
+			//uint64_t qMin = d2 / (b + 1);
 		uint64_t qMin = std::min(d2 / (b + 1), b + 1);
 		uint64_t qMax = std::min(d2 / (b + 1), uint64_t(UINT32_MAX));
 		// by dichotomy, it is possible to find one suitable q settle for D <= B * (q + 1) and D >= B * q
 
-		q = (D < B * BigInt(q + 1)) ? q : q + 1;
+		for (q = qMin; q <= qMax; q++) {
+			bool condition = (D<=B*(q+1)) &&
+							 (D>=B*q    );
+			if (condition) break;
+		}
+		q = (D<B*BigInt(q+1)) ? q : q + 1;
+		C.value.push_back(q);
 
-	//       (3) Subtract the product ofBand the quotient from D.
+	//       (3) Subtract the product of B and the quotient from D.
 	//           Temporally the highest digital ofD must be 0, because
 	//           D < B, and the length ofD is 1 digital more than B;
 
@@ -445,9 +451,10 @@ bool BigInt::operator > (const BigInt& other) const {
 
 /*
 * *******************************************************************
-* INCREMENT, DECREMENT
+* PRE/POST INCREMENT, DECREMENT
 * *******************************************************************
 */
+#pragma region increment
 
 void BigInt::operator ++ ()
 {
@@ -460,6 +467,22 @@ void BigInt::operator -- ()
 	BigInt one(1ll);
 	*this -= one;
 }
+
+BigInt BigInt::operator ++ (int)
+{
+	BigInt tmp(*this);
+	operator++();
+	return tmp;
+}
+
+BigInt BigInt::operator -- (int)
+{
+	BigInt tmp(*this);
+	operator--();
+	return tmp;
+}
+
+#pragma endregion
 
 /*
 * *******************************************************************
@@ -508,7 +531,7 @@ BigInt BigInt::operator>>(const BigInt& shift) const{
 	// check of how many cells and bits we need to shift
 	BigInt result = *this;
 	BigInt cellShift = shift / BigInt(32);
-	BigInt bitShift = shift % BigInt(32);
+	uint32_t bitShift = BigInt( shift % BigInt(32) ).value.at(0); // TODO: ugly, implement cast BigInt to uint32_t
 	if (cellShift >= value.size()) return BigInt(0ll);
 	// shift whole cells (by removing LSB cells)
 	for (BigInt i(0ll); i < cellShift; ++i) {
@@ -517,12 +540,11 @@ BigInt BigInt::operator>>(const BigInt& shift) const{
 	// shift single bits
 	uint32_t carry = 0; // stores the overflown bits of cell >> amount
 	for (uint32_t i = result.value.size() - 1; i != UINT32_MAX; i--) {
-		uint64_t a = uint64_t( result.value[i] ) << 32;
-		uint64_t shifted = a >> bitShift.value.at(0); // TODO: refactor, use a cast BigInt to uint32_t
-		shifted += uint64_t(carry) << 32;
+		uint64_t shiftedCell = uint64_t( result.value[i] ) << ( 32 - bitShift);
+		shiftedCell += uint64_t(carry) << 32;
 		// split in two 32 bit cells
-		result.value.at(i) = uint32_t(shifted >> 32);
-		carry = uint32_t(shifted);
+		result.value.at(i) = uint32_t(shiftedCell >> 32);
+		carry = uint32_t(shiftedCell);
 	}
 	result.RemoveZeroCells();
 	return result;
@@ -576,8 +598,6 @@ void BigInt::operator <<= (const BigInt& shift) {
 #pragma endregion
 
 
-
-
 /*
 * *******************************************************************
 * UTILITIES
@@ -608,10 +628,10 @@ void BigInt::RemoveZeroCells()
 #pragma region stringOps
 
 std::ostream& operator << (std::ostream& os, const BigInt& bigint) {
-	return os << "\n ~ " << bigint.BigintToBinaryString() << " ~ \n";
+	return os << "\n ~ " << bigint.BigIntToString() << " ~ \n";
 }
 
-std::string BigInt::BigintToString() const
+std::string BigInt::BigIntToString() const
 {
 	if (value.size() == 0) return "Empty";
 	std::string result = neg ? "-" : "";
@@ -639,7 +659,7 @@ std::string BigInt::BigintToString() const
 	return result;
 }
 
-std::string BigInt::BigintToBinaryString() const
+std::string BigInt::BigIntToBinary() const
 {
 	if (value.size() == 0) return "Empty";
 	std::string result = neg ? "-" : "";
@@ -658,38 +678,19 @@ std::string BigInt::BigintToBinaryString() const
 
 void BigInt::StringToBigint(const std::string& s)
 {
-	int signOffset = 0;
 	this->value.clear();
+	uint32_t signOffset = (s[0] == '-' || s[0] == '+') ? 0 : 1;
+	// for each character, multiply it for 10^position and sum it to this bigint
+	for (int64_t i = s.size() - 1; i >= signOffset; i--) {
+		uint32_t character = uint32_t(s[i]) - 48;
+		BigInt charValue = BigInt(character) * BigInt(10).pow(s.size() - 1 - i);
+		*this += charValue;
+	}
+	// sign
 	this->neg = false;
-	if (s == "Empty") return;
-	if (s[0] == '-') {
-		neg = true;
-		signOffset = 1;
-	}
-	if (s[0] == '+') {
-		signOffset = 1;
-	}
-	if (s == "0") {
-		neg = false;
-		value.push_back(0);
-		return;
-	}
-
-	// amount of cells
-	int necessaryCells = (s.size() - signOffset) / CELL_NUM_DIGITS;
-	int digitsFirstCell = (s.size() - signOffset) % CELL_NUM_DIGITS;
-
-	// push first cell
-	if (digitsFirstCell != 0) {
-		int cellValue = std::stoi(s.substr(signOffset, digitsFirstCell)); // TODO: Use string_view instead
-		value.push_back(cellValue);
-	}
-
-	// subsequent cells
-	for (int i = 0; i < necessaryCells; i++) {
-		std::string cellstring = s.substr(signOffset + digitsFirstCell + (i * CELL_NUM_DIGITS), CELL_NUM_DIGITS);
-		int cellValue = std::stoi(cellstring);
-		value.push_front(cellValue); // TODO: efficient for deque? Should be, yet check
+	if (signOffset) {
+		if (s[0] == '-') this->neg = true;
+		if (s[0] == '+') this->neg = false;
 	}
 }
 

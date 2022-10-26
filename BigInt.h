@@ -42,6 +42,8 @@ public:
 	// increment decrement
 	void operator ++ ();
 	void operator -- ();
+	BigInt operator ++ (int);
+	BigInt operator -- (int);
 	// bitwise ops
 	BigInt operator & (const BigInt&) const;
 	BigInt operator | (const BigInt&) const;
@@ -55,8 +57,8 @@ public:
 	void operator <<= (const BigInt&);
 	// print & string ops
 	friend std::ostream& operator << (std::ostream&, const BigInt&);
-	std::string BigintToString() const;
-	std::string BigintToBinaryString() const;
+	std::string BigIntToString() const;
+	std::string BigIntToBinary() const;
 	void StringToBigint(const std::string&);
 private:
 	// helpers

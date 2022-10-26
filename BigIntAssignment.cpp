@@ -36,7 +36,7 @@ void CheckBigIntToStringAndViceversa() {
     BigInt a;
     a.StringToBigint(sA);
     // bigint -> string
-    std::string sB = a.BigintToString();
+    std::string sB = a.BigIntToString();
     a.StringToBigint(sB);
     assert(sA == sB);
 }
@@ -143,17 +143,30 @@ int main()
     }
     
 
-    //BigInt a("-111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
-    //BigInt b("-111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111");
+    BigInt a("111111111111111111111111111111111111111111111111111111");
+    BigInt b("-111111111111111111111111111111111111111111111111111111");
+    BigInt expected("0");
+    BigInt result = a + b;
+
+	std::cout << "A: " << a << std::endl;
+	std::cout << "B: " << b << std::endl;
+	std::cout << "Expected: " << expected << std::endl;
+	std::cout << "Result: " << result << std::endl;
+
+	assert(result == expected);
+
 
     // Yet to do:
-	BigInt x(1999999999999999);
-    BigInt y(199999999999999);
-	std::cout << "X : " << x;
-	std::cout << "Y : " << y;
-	BigInt z;
-	BigInt remainder;
-	z = x.Divide(y,remainder);
+	//BigInt x(1999999999999999);
+ //   BigInt y(199999999999999);
+	//std::cout << "X : " << x;
+	//std::cout << "Y : " << y;
+	//BigInt z;
+	//BigInt remainder;
+	//z = x.Divide(y,remainder);
+
+
+
  //   BigInt z = x + y;
 	//std::cout << "Z = X + Y : " << z;
  //   //BigInt w("987654356789"); 
