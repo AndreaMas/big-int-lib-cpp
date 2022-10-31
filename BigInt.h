@@ -1,10 +1,14 @@
 #pragma once
+#include <cstdlib>
 #include <iostream>
 #include <deque>
 #include <limits>
+#include <functional>
 
 const int CELL_NUM_DIGITS = 10;
 const uint32_t CELL_MAX = UINT32_MAX;
+
+namespace bigint {
 
 class BigInt {
 private:
@@ -32,6 +36,8 @@ public:
 	BigInt operator + () const;
 	BigInt pow(int64_t);
 	BigInt pow(const BigInt&);
+	BigInt Divide(const BigInt& divisor, BigInt& remainder) const;
+	BigInt DivideTemporary(const BigInt& divisor, BigInt& remainder) const;
 	// comparisons
 	bool operator == (const BigInt&) const;
 	bool operator != (const BigInt&) const;
@@ -63,11 +69,15 @@ public:
 private:
 	// helpers
 	void RemoveZeroCells();
-	// algebra internal functions
 	template<typename T>void ValueBitOps(const BigInt& left, const BigInt& right, T&& lambdaFunc);
-	std::deque<uint32_t> MultiplyValues(const BigInt& other) const;
-	BigInt DivideTemporary(const BigInt& other) const;
-	BigInt RemainderTemporary(const BigInt& other) const;
 public:
-	BigInt Divide(const BigInt& other, BigInt& remainder) const;
+
 };
+
+std::ostream& operator << (std::ostream& os, const BigInt& bigint);
+
+uint64_t BinarySearch(uint64_t begin, uint64_t end, const std::function<bool(uint64_t)>& isHigher, 
+	const std::function<bool(uint64_t)>& isLower, const std::function<bool(uint64_t)>& isCorrect);
+
+
+} // end of namespace bigint

@@ -6,62 +6,28 @@
 #include <assert.h>
 #include "BigInt.h"
 
+using namespace bigint;
+
 /*
 * **********************************************
 * Asserts
 * ********************************************** 
 */
 #pragma region asserts
-void CheckLongLongConstructor() {
-	BigInt a(UINT32_MAX);
-	BigInt b(int64_t(UINT32_MAX) + 1);
-	BigInt b2(int64_t(UINT32_MAX) + 2);
-	BigInt b3(int64_t(UINT32_MAX) + 3);
-	BigInt c(INT64_MAX);
-	BigInt d(-INT64_MAX);
-	//std::cout << "A : \n" << a << "\n";
-	//std::cout << "B : \n" << b << "\n";
-	//std::cout << "B2: \n" << b2 << "\n";
-	//std::cout << "B3: \n" << b3 << "\n";
-	//std::cout << "C : \n" << c << "\n";
-	//std::cout << "D : \n" << d << "\n";
+void CheckConstructors() {
+	BigInt a(int64_t(UINT32_MAX) + 1);
+	BigInt b("4294967296");
+	assert(a == b);
 }
-void CheckStringConstructor() {
-    BigInt a("-11111111111111111111111111111111111");
-    std::cout << "A : \n" << a << "\n";
-}
-void CheckBigIntToStringAndViceversa() {
+void CheckBigIntToString() { // NOT WORKING [TODO] BigIntToString yet to implement
     // string -> bigint
-    std::string sA = "-1223334444555556666667889990000";
-    BigInt a;
-    a.StringToBigint(sA);
+	BigInt a("-122333444455555");
     // bigint -> string
-    std::string sB = a.BigIntToString();
-    a.StringToBigint(sB);
-    assert(sA == sB);
+	std::string str = a.BigIntToString();
+	BigInt b( str.c_str() ); // c_str is for string to char*
+    assert(a == b);
 }
 void CheckSum() {
-    BigInt        a( "122333444455555666666788999000000000000");
-    BigInt        b( "911111111111111111111111000111100000000");
-    BigInt expected("1033444555566666777777899999111100000000");
-	BigInt res;
-	res = a + b;
-	assert(res == expected);
-    a += b;
-    assert(a == expected);
-}
-void CheckSub() {
-	BigInt        a( "122333444455555666666788999000000000000");
-	BigInt        b( "111111111111111111111111111000000000000");
-	BigInt expected(  "11222333344444555555677888000000000000");
-    BigInt res;
-	res = a - b;
-	assert(res == expected);
-	//a -= b;
-	//assert(a == expected);
-
-}
-void CheckSum2() {
 	BigInt        a(uint64_t(UINT32_MAX) - 100);
 	BigInt        b(200);
 	BigInt expected(uint64_t(UINT32_MAX) + 100);
@@ -71,7 +37,7 @@ void CheckSum2() {
 	a += b;
 	assert(a == expected);
 }
-void CheckSub2() {
+void CheckSub() {
 	BigInt        a(int64_t(UINT32_MAX) + 100);
 	BigInt        b(200);
 	BigInt expected(int64_t(UINT32_MAX) - 100);
@@ -89,18 +55,38 @@ void CheckMul() {
     res = a * b;
     assert(res == expected);
 }
-void CheckDiv() {
-	BigInt a(500);
-	BigInt b(5);
-	BigInt expected(100);
+void CheckTempDiv() {
+	BigInt a("50000000000000");
+	BigInt b("5000000000000");
+	BigInt expected("10");
 	BigInt res;
+	BigInt modulo;
 	res = a / b;
+	modulo = a % b;
     std::cout <<
         "\nA\n" << a <<
         "\nB\n" << b <<
-        "\nEXP\n" << expected <<
-        "\nRES\n" << res << std::endl;
+        "\nExpected division result\n" << expected <<
+        "\nDivision result\n" << res << 
+        "\nExpected module result\n" << BigInt(0ll) <<
+        "\nModule result\n" << modulo << std::endl;
 	assert(res == expected);
+	assert(modulo == BigInt(0ll));
+}
+void CheckTrueDiv() { // NOT WORKING [TODO] make division work
+	BigInt a("5000000000000");
+	BigInt b("50000000000");
+	BigInt expected("100");
+	BigInt res;
+	BigInt modulo;
+	res = a.Divide(b, modulo);
+	std::cout <<
+		"\nA\n" << a <<
+		"\nB\n" << b <<
+		"\nEXP\n" << expected <<
+		"\nRES\n" << res << std::endl;
+	assert(res == expected);
+	assert(modulo == BigInt(0ll));
 }
 void CheckBitOps() {
 	BigInt a(500000000);
@@ -132,61 +118,75 @@ int main()
     
     {
         std::cout << "Runtime checks!\n";
-        //CheckStringConstructor();
-        //CheckBigIntToStringAndViceversa();
-        //CheckSum2();
-        //CheckSub2();
-        //CheckMul();
-        //CheckDiv();
-        //CheckBitOps();
-        //CheckBitShifts();
+		CheckConstructors();
+        //CheckBigIntToString();
+        CheckSum();
+        CheckSub();
+        CheckMul();
+		//CheckTrueDiv();
+        CheckTempDiv();
+        CheckBitOps();
+        CheckBitShifts();
     }
     
+    // Constructors!
+	BigInt x("199999999999999999999999");
+	BigInt y(1999999999999);
+	BigInt z;
 
-    BigInt a("111111111111111111111111111111111111111111111111111111");
-    BigInt b("-111111111111111111111111111111111111111111111111111111");
-    BigInt expected("0");
-    BigInt result = a + b;
+	std::cout << "CONSTRUCTORS\n";
+	std::cout << "X : " << x;
+	std::cout << "Y : " << y;
+	std::cout << "Z : " << z;
 
-	std::cout << "A: " << a << std::endl;
-	std::cout << "B: " << b << std::endl;
-	std::cout << "Expected: " << expected << std::endl;
-	std::cout << "Result: " << result << std::endl;
+	// Sum!
+    z = x + y;
+	std::cout << "SUM \n X + Y : " << z << std::endl;
 
-	assert(result == expected);
+	// Sub!
+	z = x - y;
+	std::cout << "SUB \n X - Y : " << z << std::endl;
 
+	// Multiplication!
+	z = x * y;
+	std::cout << "MUL \n X * Y : " << z << std::endl;
 
-    // Yet to do:
-	//BigInt x(1999999999999999);
- //   BigInt y(199999999999999);
-	//std::cout << "X : " << x;
-	//std::cout << "Y : " << y;
-	//BigInt z;
-	//BigInt remainder;
-	//z = x.Divide(y,remainder);
+	// Power!
+	z = x.pow(10);
+	std::cout << "POW \n X ^ 10 : " << z << std::endl;
 
+	// Division (WORKS BUT TOO SLOW)
+	//z = x / y;
+	//std::cout << "DIV \n X / Y : " << z << std::endl;
 
+	// Remainder (WORKS BUT TOO SLOW)
+	//z = x % y;
+	//std::cout << "POW \n X % Y : " << z << std::endl;
 
- //   BigInt z = x + y;
-	//std::cout << "Z = X + Y : " << z;
- //   //BigInt w("987654356789"); 
- //   y = x.pow(10);
-	//std::cout << "Y = X ^ 10 : ";
- //   BigInt e = x; // copy constructor
- //   z = x; // operator =
- //   z += y; // operator +, +=, -, -=, *, *=, /, /=, %, %=
- //   z %= y;
- //   //z %= 5; // same operators of above, provide overloads for int or just convert int to BigInt?
-	//BigInt w = x;
- //   //w++; // pre/post increment/decrement
- //   ++w;
- //   if (w <= y) { // all comparisons: <,>,<=,>=,==,!=
- //       z &= x; // bitwise and, or, xor ...
- //   }
- //   std::cout << y; // stream operators
- //   x = -y; // signed/unsigned unary operator -
- //   x <<= 5; // shift operators
- //   w = w.pow(y);
+	// Pre/post increment/decrement
+	z++;
+	std::cout << "INC \n Z++: " << z << std::endl;
+    
+	// Bitwise and/or/xor
+	z = x ^ y;
+	std::cout << "BIT \n X xor Y: " << z << std::endl;
+
+	// Comparisons
+    if (x < y) { // all comparisons: <,>,<=,>=,==,!=
+		std::cout << "COMP \n X lower than Y" << std::endl;
+    }
+
+	// sign
+    z = -z;
+	std::cout << "SIGN \n - Z:" << z << std::endl;
+
+	// shift ops
+    z <<= BigInt(5);
+	std::cout << "SHIFT \n Z << 5:" << z << std::endl;
+
+	// BigInt Power! (WORKS BUT TOO SLOW)
+    // z = x.pow(y);
+	// std::cout << "BIGPOW \n X ^ Y : " << z << std::endl;
 
     
 }

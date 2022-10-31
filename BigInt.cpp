@@ -5,7 +5,9 @@
 #include <limits>
 #include <string>
 #include <bitset>
+#include <functional>
 
+namespace bigint {
 
 /*
 * *******************************************************************
@@ -55,10 +57,10 @@ void BigInt::operator = (const BigInt& num) {
 
 /*
 * *******************************************************************
-* ALGEBRA OPERATIONS
+* ALGEBRA OPERATOR OVERLOADS
 * *******************************************************************
 */
-#pragma region algebOps
+#pragma region algebOperatorOverload
 
 BigInt BigInt::operator + (const BigInt& other) const {
 	// if signs differ call sub instead
@@ -68,6 +70,7 @@ BigInt BigInt::operator + (const BigInt& other) const {
 	BigInt result;
 	result.neg = neg;
 	// prepare for sum
+	size_t a;
 	uint32_t carry = 0;
 	uint32_t res32 = 0;
 	uint64_t res64 = 0;
@@ -119,9 +122,10 @@ BigInt BigInt::operator - (const BigInt& other) const {
 			carry = 1;
 		}
 		// if is first element and is 0 don't push
-		if (!(i == nCellsA - 1 && res32 == 0))
-			result.value.push_back(res32);
+		//if (!(i == nCellsA - 1 && res32 == 0))
+		result.value.push_back(res32);
 	}
+	result.RemoveZeroCells();
 	if (result.value.size() == 0) result.value.push_back(0ll); // if bigint "empty" push 0
 	return result;
 }
@@ -153,16 +157,15 @@ BigInt BigInt::operator * (const BigInt& other) const {
 
 BigInt BigInt::operator / (const BigInt& other) const {
 	BigInt result;
-	result = this->DivideTemporary(other);
-	result.neg = neg ^ other.neg;
+	BigInt remainder;
+	result = this->DivideTemporary(other, remainder);
 	return result;
 }
 
 BigInt BigInt::operator % (const BigInt& other) const {
-	BigInt result;
-	result = this->RemainderTemporary(other);
-	result.neg = neg ^ other.neg;
-	return result;
+	BigInt remainder;
+	this->DivideTemporary(other, remainder);
+	return remainder;
 }
 
 void BigInt::operator += (const BigInt& other) // TODO: avoid creating a new BigInt to assign to *this (huge refactor necessary)
@@ -235,145 +238,119 @@ BigInt BigInt::pow(const BigInt& exponent)
 	return result;
 }
 
-// ********************************************************
+#pragma endregion
 
-//Alternative multiplication call: result.value= this->MultiplyValues(other);
-std::deque<uint32_t> BigInt::MultiplyValues(const BigInt& other) const {
-	uint32_t resultLen = value.size() + other.value.size();
-	std::deque<uint32_t> result(resultLen - 1);
-	uint32_t carry = 0; // stores the MSBits that result from the 32bit x 32bit product
-	for (uint32_t i = 0; i < value.size(); i++) {
-		uint64_t a = value[i];
-		for (uint32_t j = 0; j < other.value.size(); j++) {
-			uint64_t b = other.value[j];
-			uint64_t prod = a * b + carry;
-			// split in two 32 bit cells
-			result[i + j] += uint32_t(prod);
-			carry = uint32_t(prod >> 32);
-		}
-	}
-	if (carry != 0)
-		result.push_back(carry);
-return result;
-}
+/*
+* *******************************************************************
+* ALGEBRIC FUNCTIONS
+* *******************************************************************
+*/
+#pragma region algebFunctions
 
-// Crappy division (by iterative subtraction)
-BigInt BigInt::DivideTemporary(const BigInt& other) const {
+// Crappy division, by iterative subtraction
+BigInt BigInt::DivideTemporary(const BigInt& divisor, BigInt& remainder) const {
 	BigInt result(0ll);
 	BigInt dividend = *this;
-	BigInt divisor = other;
 
 	while (dividend >= divisor) {
 		dividend -= divisor;
-		result += BigInt(1); // result++
+		++result;
 
 		std::cout <<
 			"\n- dividend: " << dividend <<
 			"\n- result: " << result << '\n';
 	}
-
+	remainder = dividend;
 	return result;
 }
 
-// Crappy % (by iterative subtraction)
-BigInt BigInt::RemainderTemporary(const BigInt& other) const {
-	BigInt dividend = *this;
-	BigInt divisor = other;
-
-	while (dividend >= divisor) {
-		dividend -= divisor;
-
-		std::cout <<
-			"\n- dividend: " << dividend << '\n';
-	}
-	return dividend;
-}
-
-
-BigInt BigInt::Divide(const BigInt& other, BigInt& remainder) const {
-	if (other == BigInt(0ll)) {
-		std::cerr << "ERROR: dividing for zero." << std::endl;
-		return BigInt();
-	}
-	if (*this < other) return BigInt(0ll);
-	if (*this == other) return BigInt(1ll);
-	//  Division is relatively complex because it must test
-	//	quotients each time.The quotient test procedure must recur to
-	//	multiplication and subtraction of unlimited integers.For
-	//	example, there are unlimited integers A, B, C and D.A is the
-	//	dividend, B(B != O and A > B) is the divisor, C will be the
-	//	quotient and D will be the remainder.
-
-	BigInt A = *this, B = other, C(0ll), D(0ll); // dividend, divisor, quotient, remainder
-	bool resIsNeg = A.neg ^ B.neg;
+BigInt BigInt::Divide(const BigInt& divisor, BigInt& remainder) const {
+	// save sign
+	bool resNeg = this->neg ^ divisor.neg;
+	// A dividend, B divisor, C quotient, D remainder
+	BigInt A = *this, B = divisor, C(0ll), D(0ll);
 	B.neg = false; B.neg = false;
-	//  1.1) Check special cases
+
+	// SPECIAL CASES
+	
+	// divisor == 0
 	if (B == BigInt(0ll)) {
-		std::cerr << "ERROR: dividing for zero." << std::endl;
+		std::cout << "ERROR: dividing for zero." << std::endl;
 		return BigInt();
 	}
+	// divisor == 1 or -1
 	if (B == BigInt(1ll)) {
-		A.neg = resIsNeg;
+		A.neg = resNeg;
 		return A;
 	}
+	// divisor greater or equal wrt dividend
 	if (A < B) return BigInt(0ll);
-	if (A == B) return BigInt(1ll);
-
-	//  The division arithmetic can be described as following steps:
-	//  1) Copy the highest part of A with the length of B to D, and 
-	//     then insert an element 0 to the end ofinteger queue of D;
-	D = A;
-	D.value.erase(D.value.begin() + B.value.size(), D.value.end());
-	//  2) 
-	//     If D < B, then insert an element 0 to the lower position of C,
-	//	             it means this quotient digital is 0;
-	if (D < B) C.value.push_front(0);
-	//     If D = B, then insert an element 1 to the lower position of C, it
-	//               means this quotient digital is 1, and do D = D - B;
-	if (D == B) {
-		C.value.push_front(1);
-		D -= B;
+	if (A == B) {
+		BigInt one(1ll);
+		one.neg = resNeg;
+		return one;
 	}
-	//     If D > B, then try to find the quotient as following steps :
-	if (D > B) {
-		//	     (1) Copying the highest two digital of D to variable d2
-		//           (unsigned _int64), copy the highest one digital of B to
-		//           variable b(unsigned _int64), assuming q(unsigned_int64) 
-		//           is the tried quotient;
-		uint64_t d2 = ((uint64_t)D.value[D.value.size() - 1] << 32) | (uint64_t)D.value[D.value.size() - 2];
-		uint64_t b = (uint64_t)B.value[B.value.size() - 1];
-		uint64_t q = 0;
-		//       (2) Minimum of q is d2 / (b + 1), maximum of q is min ( (d2 / b+1), 2^32 - 1)
-		//           by dichotomy, it is possible to find one suitable
-		//           q settle for D <= B * (q + 1) and D >= B * q. At this time, the
-		//           right quotient must be q or q + 1, if D < B * (q + 1) then the
-		//           quotient is q, else the quotient is q + 1. The quotient
-		//           would be inserted to the lower position of C;
-			//uint64_t qMin = d2 / (b + 1);
-		uint64_t qMin = std::min(d2 / (b + 1), b + 1);
-		uint64_t qMax = std::min(d2 / (b + 1), uint64_t(UINT32_MAX));
-		// by dichotomy, it is possible to find one suitable q settle for D <= B * (q + 1) and D >= B * q
 
-		for (q = qMin; q <= qMax; q++) {
-			bool condition = (D<=B*(q+1)) &&
-							 (D>=B*q    );
-			if (condition) break;
+	// DIVISION ALGORITHM
+	
+	// Copy highest part of A with length of B to D
+	for (uint32_t i = 0; i < B.value.size(); i++) {
+		D.value.push_back(A.value[0]);
+		A.value.pop_back();
+	}
+	//D = A; D.value.erase(D.value.begin() + B.value.size(), D.value.end());
+
+	// Insert element 0 to the end of integer queue of D
+	D.value.push_back(0ll);
+
+	// Repeat this for all elements of A
+	for (uint32_t i = 0; i < A.value.size(); i++) {
+
+		// If D < B, then insert an element 0 to the lower pos of C, aka this quotient digital is 0;
+		if (D < B) C.value.push_front(0);
+		// If D = B, then insert an element 1 to the lower pos of C, aka this quotient digital is 1, and do D = D - B;
+		if (D == B) {
+			C.value.push_front(1);
+			D -= B;
 		}
-		q = (D<B*BigInt(q+1)) ? q : q + 1;
-		C.value.push_back(q);
+		// If D > B, then try to find the quotient as follows
+		if (D > B) {
+			// copy highest two digitals of D to variable d2
+			uint64_t d2 = ((uint64_t)D.value[D.value.size() - 1] << 32) | (uint64_t)D.value[D.value.size() - 2];
+			// copy highest one digital of B to variable b
+			uint64_t b = (uint64_t)B.value[B.value.size() - 1];
+			uint64_t q = 0; // tried quotient
+			// min & max q values
+			uint64_t qMin = std::min(d2 / (b + 1), b + 1); // TODO: try: uint64_t qMin = d2 / (b + 1);
+			uint64_t qMax = std::min(d2 / (b + 1), uint64_t(UINT32_MAX));
+			// BINARY SEARCH
+			// q must satisfy D<=B*(q+1) && D>=B*q
+			auto correctCondition = [&D, &B](uint64_t q) -> bool { return D <= B * BigInt(q + 1) && D >= B * BigInt(q); };
+			// if  D<B*q  then q must be higher
+			auto isHigherCondition = [&D, &B](uint64_t q) -> bool { return D < B* BigInt(q); };
+			// if  D>B*(q+1)  then q must be lower
+			auto isLowerCondition = [&D, &B](uint64_t q) -> bool { return D > B * (BigInt(q) + BigInt(1ll)); };
+			q = BinarySearch(qMin, qMax, isHigherCondition, isLowerCondition, correctCondition);
+			// q correct value should be q or q + 1
+			q = (D < B* BigInt(q + 1)) ? q : q + 1;
+			// insert it to the lower pos of C
+			C.value.push_front(q);
+			//  Subtract the product of B and the quotient from D.
+			D -= B * BigInt(q);
+			//  Temporally the highest digital of D must be 0, because
+			//  D < B, and the length of D is 1 digital more than B;
+			D.value.push_back(0ll);
+		}
 
-	//       (3) Subtract the product of B and the quotient from D.
-	//           Temporally the highest digital ofD must be 0, because
-	//           D < B, and the length ofD is 1 digital more than B;
-
+		// Insert the next digital from A to the lower position of D
+		D.value.push_back(A.value.at(i));
+		// delete the highest element of D (it is 0)
+		D.value.pop_back();
 	}
-	//  3) Insert the next digital from A to the lower position of D, and
-	//     delete the highest element of D(it is 0), and repeat step 2
-	//     until all elements of A has been treated
 
-	//  4) D is the remainder.
+	// finally, D is the remainder.
 	remainder = D;
-	C.neg = resIsNeg;
+	C.neg = resNeg;
 	return C;
 }
 
@@ -411,14 +388,18 @@ bool BigInt::operator <= (const BigInt& other) const {
 		if (sizeL > sizeR) return false;
 	}
 	// compare cells
-	for (uint32_t i = 0; i < sizeL; i++) {
-		if (this->value[i] > other.value[i]) return false;
+	for (uint32_t i = sizeL - 1; i < sizeL; --i) {
+		uint32_t leftval = this->value[i];
+		uint32_t rightval = other.value[i];
+		if (leftval < rightval) return true;
+		if (leftval > rightval) return false;
+		//if (this->value[i] > other.value[i]) return false;
 	}
 	return true;
 }
 
 bool BigInt::operator >= (const BigInt& other) const {
-	// infer by sign (if left negative false)
+	// infer by sign
 	if (this->neg != other.neg) {
 		if (this->neg == true) return false;
 		else return true;
@@ -431,8 +412,13 @@ bool BigInt::operator >= (const BigInt& other) const {
 		if (sizeL > sizeR) return true;
 	}
 	// compare cells
-	for (uint32_t i = 0; i < sizeL; i++) {
-		if (this->value[i] < other.value[i]) return false;
+
+	for (uint32_t i = sizeL - 1; i < sizeL; --i) {
+		uint32_t leftval = this->value[i];
+		uint32_t rightval = other.value[i];
+		if (leftval < rightval) return false;
+		if (leftval > rightval) return true;
+		//if (this->value[i] < other.value[i]) return false;
 	}
 	return true;
 }
@@ -606,7 +592,7 @@ void BigInt::operator <<= (const BigInt& shift) {
 #pragma region utilities
 void BigInt::RemoveZeroCells()
 {
-	auto iter = value.rbegin();
+	auto iter = value.rbegin(); // last element, aka MSBits
 
 	while (!value.empty() && (*iter) == 0) {
 		value.pop_back();
@@ -615,7 +601,24 @@ void BigInt::RemoveZeroCells()
 
 	if (value.size() == 0) {
 		neg = 0;
-		value.push_back(0);
+		value.push_back(0ll);
+	}
+}
+
+uint64_t BinarySearch(
+	uint64_t begin, 
+	uint64_t end,
+	const std::function<bool(uint64_t q)>& isHigher,
+	const std::function<bool(uint64_t q)>& isLower,
+	const std::function<bool(uint64_t q)>& isCorrect)
+{
+	uint64_t result;
+	while (begin <= end) {
+		result = (begin + end) / 2; // middle
+		if (isCorrect(result)) return result;
+		else if (isHigher(result)) end = result - 1;
+		else if (isLower(result)) begin = result + 1;
+		else std::cout << "Binary search is failing ... ";
 	}
 }
 #pragma endregion
@@ -628,7 +631,7 @@ void BigInt::RemoveZeroCells()
 #pragma region stringOps
 
 std::ostream& operator << (std::ostream& os, const BigInt& bigint) {
-	return os << "\n ~ " << bigint.BigIntToString() << " ~ \n";
+	return os << "\n ~ " << bigint.BigIntToBinary() << " ~ \n";
 }
 
 std::string BigInt::BigIntToString() const
@@ -636,7 +639,6 @@ std::string BigInt::BigIntToString() const
 	if (value.size() == 0) return "Empty";
 	std::string result = neg ? "-" : "";
 
-	//
 	//int cellIndex = 0;
 	for (auto iter = value.rbegin(); iter != value.rend(); iter++) {
 		uint32_t cellValue = *iter;
@@ -664,7 +666,6 @@ std::string BigInt::BigIntToBinary() const
 	if (value.size() == 0) return "Empty";
 	std::string result = neg ? "-" : "";
 
-	//
 	for (auto iter = value.rbegin(); iter != value.rend(); iter++) {
 		std::bitset<32> bitCell(*iter);
 		//printf("- cell %02d --> %010u\n", (int)cellIndex, cellValue);
@@ -679,7 +680,7 @@ std::string BigInt::BigIntToBinary() const
 void BigInt::StringToBigint(const std::string& s)
 {
 	this->value.clear();
-	uint32_t signOffset = (s[0] == '-' || s[0] == '+') ? 0 : 1;
+	uint32_t signOffset = (s[0] == '-' || s[0] == '+') ? 1 : 0;
 	// for each character, multiply it for 10^position and sum it to this bigint
 	for (int64_t i = s.size() - 1; i >= signOffset; i--) {
 		uint32_t character = uint32_t(s[i]) - 48;
@@ -695,4 +696,7 @@ void BigInt::StringToBigint(const std::string& s)
 }
 
 #pragma endregion
+
+
+} // end of namespace bigint
 
