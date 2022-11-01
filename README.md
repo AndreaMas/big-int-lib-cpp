@@ -21,13 +21,6 @@ The include preprecessor directive is:
 #include "BigInt.h"
 ```
 
-
-## Issues
-
-- Efficient division doesn't work. Division is temporarely implemented as a repeated subtraction, which takes an unbearable amount of time.
-- Given the above, there is no way to show a BigInt in decimal, only in binary.
-
-
 ## Features
 
 ### Declaring and Intializing Variables.
@@ -41,33 +34,31 @@ BigInt c(a);                                    // copy constructor
 ### Addition
 
 ```c++
-c = a + b;             // Addition
-c += b;                // Shorthand
+c = a + b;             
+c += b;                
 ```
 
 ### Subtraction 
 
 ```c++
-c = a - b;             // Subtraction
-c -= b;                // Shorthand
+c = a - b;             
+c -= b;                
 ```
 
 ### Multiplication
 
 ```c++
-c = a * b;             // Multiplication
-c *= b;                // Shorthand
+c = a * b;          
+c *= b;            
 ```
 
 ### Division
 
-Division is temporarily obtained through iterative subtraction, it is therefore very slow.
+Division is temporarily obtained through iterative subtraction, it is therefore unbearably slow.
 
 ```c++
 c = a / b;                  // Slow Divison
-c /= b;                     // Shorthand
-
-// Alternative
+c /= b;                     
 
 BigInt mod;                 
 c = a.Divide(b, mod);       // Fast Division (not working)
@@ -76,13 +67,11 @@ c = a.Divide(b, mod);       // Fast Division (not working)
 
 ### Modulo
 
-Mod is temporarily obtained through iterative subtraction, it is therefore very slow.
+Mod is temporarily obtained through iterative subtraction, it is therefore unbearably slow.
 
 ```c++
 c = a % b;                  // Slow Modulo
-c %= b;                     // Shorthand
-
-// Alternative
+c %= b;
 
 BigInt mod;                 
 c = a.Divide(b, mod);       // Fast Modulo (not working)
@@ -110,8 +99,8 @@ c = a.pow(b);               // a to the power of b
 ```c++
 c++                        // increment by one (post-increment)
 ++c                        // increment c by one (pre-increment)
-c--                        // decrement
---c                        // decrement            
+c-- 
+--c           
 ```
 
 ### Bitwise operations
@@ -128,17 +117,17 @@ c &= b                     // shorthand
 Supports :  **>>** , **<<** ,  **>>=** , **<<=**
 
 ```c++
-c = a << b                 // a shifted left by b bits
-c =>> b                    // shorthand
+c = a << b                 // c is a shifted left by b bits
+c =>> b
 ```
 
 ### Sign
 
 ```c++
-c = -a                 // c is a with changed sign
+c = -a                    // c is a with changed sign
 ```
 
-## Print
+### Print
 
 Given the absence of an efficient division, displaying the decimal representation of the biginteger is impractical. 
 Only the binary representation of the biginteger is shown.
