@@ -108,11 +108,45 @@ c = a.pow(b);               // a to the power of b
 ### Increment and Decrement
 
 ```c++
-c++                        // increment c by one (post-increment)
+c++                        // increment by one (post-increment)
 ++c                        // increment c by one (pre-increment)
 c--                        // decrement
 --c                        // decrement            
 ```
 
+### Bitwise operations
 
+```c++
+c = a & b                  // bitwise AND
+c = a | b                  // bitwise OR
+c = a ^ b                  // bitwise XOR
+c &= b                     // shorthand
+```
+
+### Bitshifts
+
+Supports :  **>>** , **<<** ,  **>>=** , **<<=**
+
+```c++
+c = a << b                 // a shifted left by b bits
+c =>> b                    // shorthand
+```
+
+### Sign
+
+```c++
+c = -a                 // c is a with changed sign
+```
+
+## Print
+
+Given the absence of an efficient division, displaying the decimal representation of the biginteger is impractical. 
+Only the binary representation of the biginteger is shown.
+
+```c++
+BigInt c("50000000000");
+std::cout << c ;           // Output:   00000000000000000000000000001011.10100100001110110111010000000000
+                           // The above shows a biginteger whose bits are stored into two 32bit cells
+                           // The left cell contains the most significant bits.
+```
 
