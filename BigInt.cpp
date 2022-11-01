@@ -294,11 +294,8 @@ BigInt BigInt::Divide(const BigInt& divisor, BigInt& remainder) const {
 	// DIVISION ALGORITHM
 	
 	// Copy highest part of A with length of B to D
-	for (uint32_t i = 0; i < B.value.size(); i++) {
-		D.value.push_back(A.value[0]);
-		A.value.pop_back();
-	}
-	//D = A; D.value.erase(D.value.begin() + B.value.size(), D.value.end());
+	D = A;
+	D.value.erase(D.value.begin() + B.value.size(), D.value.end());
 
 	// Insert element 0 to the end of integer queue of D
 	D.value.push_back(0ll);
@@ -307,7 +304,8 @@ BigInt BigInt::Divide(const BigInt& divisor, BigInt& remainder) const {
 	for (uint32_t i = 0; i < A.value.size(); i++) {
 
 		// If D < B, then insert an element 0 to the lower pos of C, aka this quotient digital is 0;
-		if (D < B) C.value.push_front(0);
+		if (D < B) 
+			C.value.push_front(0);
 		// If D = B, then insert an element 1 to the lower pos of C, aka this quotient digital is 1, and do D = D - B;
 		if (D == B) {
 			C.value.push_front(1);
@@ -343,7 +341,7 @@ BigInt BigInt::Divide(const BigInt& divisor, BigInt& remainder) const {
 		}
 
 		// Insert the next digital from A to the lower position of D
-		D.value.push_back(A.value.at(i));
+		D.value.push_front(A.value.at(i));
 		// delete the highest element of D (it is 0)
 		D.value.pop_back();
 	}
@@ -393,7 +391,6 @@ bool BigInt::operator <= (const BigInt& other) const {
 		uint32_t rightval = other.value[i];
 		if (leftval < rightval) return true;
 		if (leftval > rightval) return false;
-		//if (this->value[i] > other.value[i]) return false;
 	}
 	return true;
 }
@@ -412,13 +409,11 @@ bool BigInt::operator >= (const BigInt& other) const {
 		if (sizeL > sizeR) return true;
 	}
 	// compare cells
-
 	for (uint32_t i = sizeL - 1; i < sizeL; --i) {
 		uint32_t leftval = this->value[i];
 		uint32_t rightval = other.value[i];
 		if (leftval < rightval) return false;
 		if (leftval > rightval) return true;
-		//if (this->value[i] < other.value[i]) return false;
 	}
 	return true;
 }
@@ -478,7 +473,7 @@ BigInt BigInt::operator -- (int)
 #pragma region bitwiseop
 
 template<typename T>
-void BigInt::ValueBitOps(const BigInt& left, const BigInt& right, T&& lambdaFunc) { // TODO: are templates good practice for lambdas?
+void BigInt::ValueBitOps(const BigInt& left, const BigInt& right, T&& lambdaFunc) { // Are templates good practice for lambdas?
 	this->value.clear();
 	const uint32_t nCellsA = left.value.size();
 	const uint32_t nCellsB = right.value.size();

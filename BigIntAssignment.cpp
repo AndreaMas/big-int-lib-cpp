@@ -24,7 +24,7 @@ void CheckBigIntToString() { // NOT WORKING [TODO] BigIntToString yet to impleme
 	BigInt a("-122333444455555");
     // bigint -> string
 	std::string str = a.BigIntToString();
-	BigInt b( str.c_str() ); // c_str is for string to char*
+	BigInt b( str.c_str() ); // c_str -> string to char*
     assert(a == b);
 }
 void CheckSum() {
@@ -83,8 +83,10 @@ void CheckTrueDiv() { // NOT WORKING [TODO] make division work
 	std::cout <<
 		"\nA\n" << a <<
 		"\nB\n" << b <<
-		"\nEXP\n" << expected <<
-		"\nRES\n" << res << std::endl;
+		"\nExpected division result\n" << expected <<
+		"\nDivision result\n" << res <<
+		"\nExpected module result\n" << BigInt(0ll) <<
+		"\nModule result\n" << modulo << std::endl;
 	assert(res == expected);
 	assert(modulo == BigInt(0ll));
 }
@@ -118,15 +120,15 @@ int main()
     
     {
         std::cout << "Runtime checks!\n";
-		CheckConstructors();
+		//CheckConstructors();
         //CheckBigIntToString();
-        CheckSum();
-        CheckSub();
-        CheckMul();
-		//CheckTrueDiv();
-        CheckTempDiv();
-        CheckBitOps();
-        CheckBitShifts();
+        //CheckSum();
+        //CheckSub();
+        //CheckMul();
+		CheckTrueDiv();
+        //CheckTempDiv();
+        //CheckBitOps();
+        //CheckBitShifts();
     }
     
     // Constructors!
