@@ -65,16 +65,16 @@ c = a.Divide(b, mod);       // Fast Division (not working)
 
 ```
 
-### Modulo
+### Mod
 
 Mod is temporarily obtained through iterative subtraction, it is therefore unbearably slow.
 
 ```c++
-c = a % b;                  // Slow Modulo
+c = a % b;                  // Slow Mod
 c %= b;
 
 BigInt mod;                 
-c = a.Divide(b, mod);       // Fast Modulo (not working)
+c = a.Divide(b, mod);       // Fast Mod (not working)
 
 ```
 
