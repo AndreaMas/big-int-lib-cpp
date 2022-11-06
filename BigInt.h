@@ -34,7 +34,6 @@ public:
 	void operator %= (const BigInt&);
 	BigInt operator - () const;
 	BigInt operator + () const;
-	BigInt pow(int64_t);
 	BigInt pow(const BigInt&);
 	BigInt Divide(const BigInt& divisor, BigInt& remainder) const;
 	BigInt DivideTemporary(const BigInt& divisor, BigInt& remainder) const;
@@ -43,8 +42,15 @@ public:
 	bool operator != (const BigInt&) const;
 	bool operator <= (const BigInt&) const;
 	bool operator >= (const BigInt&) const;
+	
 	bool operator < (const BigInt&) const;
 	bool operator > (const BigInt&) const;
+	bool ModuloCompareLowerEqual(const BigInt&) const;
+	bool ModuloCompareGreaterEqual(const BigInt&) const;
+	bool ModuloCompareLower(const BigInt&) const;
+	bool ModuloCompareGreater(const BigInt&) const;
+	bool ModuloCompareEqual(const BigInt& other) const;
+	bool ModuloCompareDifferent(const BigInt& other) const;
 	// increment decrement
 	void operator ++ ();
 	void operator -- ();

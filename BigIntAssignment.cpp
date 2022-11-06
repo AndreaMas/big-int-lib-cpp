@@ -73,23 +73,6 @@ void CheckTempDiv() {
 	assert(res == expected);
 	assert(modulo == BigInt(0ll));
 }
-void CheckTrueDiv() { // NOT WORKING [TODO] make division work
-	BigInt a("5000000000000");
-	BigInt b("50000000000");
-	BigInt expected("100");
-	BigInt res;
-	BigInt modulo;
-	res = a.Divide(b, modulo);
-	std::cout <<
-		"\nA\n" << a <<
-		"\nB\n" << b <<
-		"\nExpected division result\n" << expected <<
-		"\nDivision result\n" << res <<
-		"\nExpected module result\n" << BigInt(0ll) <<
-		"\nModule result\n" << modulo << std::endl;
-	assert(res == expected);
-	assert(modulo == BigInt(0ll));
-}
 void CheckBitOps() {
 	BigInt a(500000000);
 	BigInt b(500000000);
@@ -112,26 +95,28 @@ void CheckBitShifts() {
 	std::cout << "A shifted right:" << b << '\n';
 	std::cout << "A shifted left:" << c << '\n';
 }
+void CheckTrueDiv() { // NOT WORKING [TODO] make division work
+	BigInt a("500000000000000000000000000000000000000000");
+	BigInt b("5000000000000000000000");
+	BigInt expected("100000000000000000000");
+	BigInt res;
+	BigInt modulo;
+	res = a.Divide(b, modulo);
+	std::cout <<
+		"\nA\n" << a <<
+		"\nB\n" << b <<
+		"\nExpected division result\n" << expected <<
+		"\nDivision result\n" << res <<
+		"\nExpected module result\n" << BigInt(0ll) <<
+		"\nModule result\n" << modulo << std::endl;
+	assert(res == expected);
+	assert(modulo == BigInt(0ll));
+}
 #pragma endregion
 
+void Demo() {
 
-int main()
-{
-    
-    {
-        std::cout << "Runtime checks!\n";
-		//CheckConstructors();
-        //CheckBigIntToString();
-        //CheckSum();
-        //CheckSub();
-        //CheckMul();
-		CheckTrueDiv();
-        //CheckTempDiv();
-        //CheckBitOps();
-        //CheckBitShifts();
-    }
-    
-    // Constructors!
+	// Constructors!
 	BigInt x("199999999999999999999999");
 	BigInt y(1999999999999);
 	BigInt z;
@@ -142,7 +127,7 @@ int main()
 	std::cout << "Z : " << z;
 
 	// Sum!
-    z = x + y;
+	z = x + y;
 	std::cout << "SUM \n X + Y : " << z << std::endl;
 
 	// Sub!
@@ -168,28 +153,49 @@ int main()
 	// Pre/post increment/decrement
 	z++;
 	std::cout << "INC \n Z++: " << z << std::endl;
-    
+
 	// Bitwise and/or/xor
 	z = x ^ y;
 	std::cout << "BIT \n X xor Y: " << z << std::endl;
 
 	// Comparisons
-    if (x < y) { // all comparisons: <,>,<=,>=,==,!=
+	if (x < y) { // all comparisons: <,>,<=,>=,==,!=
 		std::cout << "COMP \n X lower than Y" << std::endl;
-    }
+	}
 
 	// sign
-    z = -z;
+	z = -z;
 	std::cout << "SIGN \n - Z:" << z << std::endl;
 
 	// shift ops
-    z <<= BigInt(5);
+	z <<= BigInt(5);
 	std::cout << "SHIFT \n Z << 5:" << z << std::endl;
 
 	// BigInt Power! (WORKS BUT TOO SLOW)
-    // z = x.pow(y);
+	// z = x.pow(y);
 	// std::cout << "BIGPOW \n X ^ Y : " << z << std::endl;
+}
 
+void Tests() {
+	std::cout << "Runtime checks!\n";
+	CheckConstructors();
+	//CheckBigIntToString();
+	CheckSum();
+	CheckSub();
+	CheckMul();
+	//CheckTrueDiv();
+	CheckTempDiv();
+	CheckBitOps();
+	CheckBitShifts();
+}
+
+int main()
+{
+    {
+		//Tests();
+		CheckTrueDiv();
+		//Demo();
+    }
     
 }
 
