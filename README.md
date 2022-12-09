@@ -29,7 +29,7 @@ Division is temporarily obtained through iterative subtraction, it is therefore 
 
 BigInt a("-35454657578383683445743788348");     // big integer initialized with a string
 BigInt b(118009093);                            // big integer initialized with a 64bit integer
-BigInt c(a);                                    // copy constructor
+BigInt c = a;                                   // copy constructor
 
 c = a + b;                                      // Addition    
 c = a - b;                                      // Subtraction       
